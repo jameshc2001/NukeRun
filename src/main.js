@@ -15,14 +15,21 @@ let deltaTime = 0;
 function init() {
     canvas = document.getElementById( "gl-canvas" );
 
+    // renderer
+    renderer = new THREE.WebGLRenderer( {canvas} );
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.setPixelRatio( window.devicePixelRatio );
+    renderer.setSize( window.innerWidth, window.innerHeight );
+
     //define camera
-    const fov = 75;
-    const aspect = window.innerWidth / window.innerHeight;
-    const near = 0.1;
-    const far = 100;
-    camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
-    camera.position.z = 10;
-    camera.position.y = 5;
+    // const fov = 75;
+    // const aspect = window.innerWidth / window.innerHeight;
+    // const near = 0.1;
+    // const far = 100;
+    // camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
+    // camera.position.z = -2;
+    // camera.position.y = 2;
 
     // world
     scene = new THREE.Scene();
@@ -62,74 +69,34 @@ function init() {
     const ambLight = new THREE.AmbientLight(0xffffff, 4.0 );
     scene.add(ambLight);
 
-    // const ambientLight = new THREE.AmbientLight( 0xF22222, 2.0 );
-    // scene.add( ambientLight );
-
     //load alex (character) and animations
     player = new Player(new THREE.Vector3(0,0,0), scene);
-    // scene.add(player.fbx);
-    // console.log(player.fbx);
-    // const fbxLoader = new FBXLoader();
-    // fbxLoader.setPath('Resources/alex/');
-    // fbxLoader.load(
-    //     'Alex.fbx',
-    //     (alex) => {
-    //         //need to find child mesh and set cast shadows to true
-    //         alex.traverse(child => { 
-    //             child.castShadow = true;
-    //         });
-    //         alex.scale.setScalar(0.01);
-    //         alex.castShadow = true;
 
-    //         //get the animations
-    //         const animation = new FBXLoader();
-    //         animation.setPath('Resources/alex/');
-    //         animation.load('Idle.fbx', (idle) => {
-    //             alexMixer = new THREE.AnimationMixer(alex);
-    //             const action = alexMixer.clipAction(idle.animations[0]);
-    //             action.play();
-    //         });
 
-    //         scene.add(alex)
-    //     },
-    //     (xhr) => {
-    //         //console.log((xhr.loaded / xhr.total) * 100 + '% loaded');
-    //     }
-    // );
-
-    // renderer
-    renderer = new THREE.WebGLRenderer( {canvas} );
-    renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    renderer.setPixelRatio( window.devicePixelRatio );
-    renderer.setSize( window.innerWidth, window.innerHeight );
 
     window.addEventListener( 'resize', onWindowResize );
-
-    createControls( camera );
-    controls.update();
+    
+    // createControls( camera );
+    // controls.update();
 }
 
-function createControls( camera ) {
-    controls = new TrackballControls( camera, renderer.domElement );
+// function createControls( camera ) {
+//     controls = new TrackballControls( camera, renderer.domElement );
 
-    controls.rotateSpeed = 1.0;
-    controls.zoomSpeed = 5;
-    controls.panSpeed = 0.8;
+//     controls.rotateSpeed = 1.0;
+//     controls.zoomSpeed = 5;
+//     controls.panSpeed = 0.8;
 
-    controls.keys = [ 'KeyA', 'KeyS', 'KeyD' ];
-}
+//     controls.keys = [ 'KeyA', 'KeyS', 'KeyD' ];
+// }
 
 function onWindowResize() {
     const aspect = window.innerWidth / window.innerHeight;
 
-    camera.aspect = aspect;
-    camera.updateProjectionMatrix();
+    player.camera.aspect = aspect;
+    player.camera.updateProjectionMatrix();
 
     renderer.setSize( window.innerWidth, window.innerHeight );
-
-    controls.handleResize();
-    controls.update();
 }
 
 function update() {
@@ -145,8 +112,8 @@ function update() {
         deltaTime = clock.getDelta();
         player.update(deltaTime);
 
-        controls.update();
-        renderer.render( scene, camera );
+        //controls.update();
+        renderer.render( scene, player.camera );
     }
 }
 
