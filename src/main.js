@@ -1,19 +1,24 @@
 import * as THREE from '../Common/build/three.module.js';
-import { TrackballControls } from '../Common/examples/jsm/controls/TrackballControls.js';
-import {FBXLoader} from '../Common/examples/jsm/loaders/FBXLoader.js';
 import {Player} from '../src/player.js';
+import { AmmoPhysics } from '../Common/examples/jsm/physics/AmmoPhysics.js';
 
-let camera, controls, scene, renderer, canvas, flag;
-let alexMixer;
+let scene, renderer, canvas
 let loaded = true;
 
 let player;
 let clock = new THREE.Clock();
 let deltaTime = 0;
 
+let physics;
+
+let box;
+let plane;
+
 //load models and set up test scene
-function init() {
+async function init() {
     canvas = document.getElementById( "gl-canvas" );
+
+    physics = await AmmoPhysics();
 
     // renderer
     renderer = new THREE.WebGLRenderer( {canvas} );
@@ -21,15 +26,6 @@ function init() {
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.setPixelRatio( window.devicePixelRatio );
     renderer.setSize( window.innerWidth, window.innerHeight );
-
-    //define camera
-    // const fov = 75;
-    // const aspect = window.innerWidth / window.innerHeight;
-    // const near = 0.1;
-    // const far = 100;
-    // camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
-    // camera.position.z = -2;
-    // camera.position.y = 2;
 
     // world
     scene = new THREE.Scene();
@@ -42,14 +38,25 @@ function init() {
         '4.bmp', '5.bmp', '6.bmp']);
     scene.background = skybox;
 
-    //make a plane
-    const planeGeometry = new THREE.PlaneGeometry( 10, 10 );
+    //make a floor, has to be box for collisions
+    const planeGeometry = new THREE.BoxGeometry( 10, 10, 2 );
     const planeMaterial = new THREE.MeshPhongMaterial( {color: 0x202020} );
-    const plane = new THREE.Mesh( planeGeometry, planeMaterial );
+    plane = new THREE.Mesh( planeGeometry, planeMaterial );
     plane.rotateX( - Math.PI / 2);
-    plane.position.y = 0;
+    plane.position.y = -1;
     plane.receiveShadow = true;
     scene.add( plane );
+    physics.addMesh(plane);
+
+    //cube with physics
+    const boxGeometry = new THREE.BoxGeometry(0.5, 0.5, 0.5);
+    const boxMaterial = new THREE.MeshPhongMaterial( {color: 0x220000} );
+    box = new THREE.Mesh(boxGeometry, boxMaterial);
+    box.position.set(0,40,0);
+    box.castShadow = true;
+    box.receiveShadow = true;
+    scene.add(box);
+    physics.addMesh(box, 1);
 
     // lights
     const dirLight = new THREE.DirectionalLight( 0xffffff, 1.0 );
@@ -70,25 +77,11 @@ function init() {
     scene.add(ambLight);
 
     //load alex (character) and animations
-    player = new Player(new THREE.Vector3(0,0,0), scene);
-
-
+    player = new Player(new THREE.Vector3(0,0,0), scene, physics);
 
     window.addEventListener( 'resize', onWindowResize );
-    
-    // createControls( camera );
-    // controls.update();
 }
 
-// function createControls( camera ) {
-//     controls = new TrackballControls( camera, renderer.domElement );
-
-//     controls.rotateSpeed = 1.0;
-//     controls.zoomSpeed = 5;
-//     controls.panSpeed = 0.8;
-
-//     controls.keys = [ 'KeyA', 'KeyS', 'KeyD' ];
-// }
 
 function onWindowResize() {
     const aspect = window.innerWidth / window.innerHeight;
@@ -111,6 +104,8 @@ function update() {
         //alexMixer.update(0.01);
         deltaTime = clock.getDelta();
         player.update(deltaTime);
+
+        //console.log(box.position);
 
         //controls.update();
         renderer.render( scene, player.camera );
