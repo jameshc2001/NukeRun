@@ -1,24 +1,44 @@
 import * as THREE from '../Common/build/three.module.js';
 import {Player} from '../src/player.js';
-import { AmmoPhysics } from '../Common/examples/jsm/physics/AmmoPhysics.js';
+//import * as CANNON from '../Common/build/cannon.js';
 
 let scene, renderer, canvas
-let loaded = true;
+let loaded = false;
 
 let player;
 let clock = new THREE.Clock();
 let deltaTime = 0;
 
-let physics;
+let world;
 
 let box;
-let plane;
+let boxBody;
+let floor;
+let floorBody;
+
+let physicsMaterial;
 
 //load models and set up test scene
-async function init() {
+function init() {
     canvas = document.getElementById( "gl-canvas" );
 
-    physics = await AmmoPhysics();
+    //set up cannon
+    world = new CANNON.World();
+    world.gravity.set(0,-9.81,0);
+    world.quatNormalizeSkip = 0;
+    world.quatNormalizeFast = false;
+    world.broadphase = new CANNON.NaiveBroadphase();
+    world.solver.iterations = 10;
+    world.defaultContactMaterial.contactEquationStiffness = 1e9;
+    world.defaultContactMaterial.contactEquationRelaxation = 4;
+
+    physicsMaterial = new CANNON.Material("slipperyMaterial");
+    var physicsContactMaterial = new CANNON.ContactMaterial(physicsMaterial,
+                                                            physicsMaterial,
+                                                            0.0, // friction coefficient
+                                                            0.3  // restitution
+                                                            );
+    world.defaultContactMaterial.friction = 0;
 
     // renderer
     renderer = new THREE.WebGLRenderer( {canvas} );
@@ -39,24 +59,35 @@ async function init() {
     scene.background = skybox;
 
     //make a floor, has to be box for collisions
-    const planeGeometry = new THREE.BoxGeometry( 10, 10, 2 );
-    const planeMaterial = new THREE.MeshPhongMaterial( {color: 0x202020} );
-    plane = new THREE.Mesh( planeGeometry, planeMaterial );
-    plane.rotateX( - Math.PI / 2);
-    plane.position.y = -1;
-    plane.receiveShadow = true;
-    scene.add( plane );
-    physics.addMesh(plane);
+    const floorGeometry = new THREE.BoxGeometry( 10, 10, 2 );
+    const floorMaterial = new THREE.MeshPhongMaterial( {color: 0x202020} );
+    floor = new THREE.Mesh( floorGeometry, floorMaterial );
+    floor.rotateX( - Math.PI / 2);
+    floor.position.y = -1;
+    floor.receiveShadow = true;
+    scene.add( floor );
+    //now create floor but for cannon
+    const floorShape = new CANNON.Box(new CANNON.Vec3(10/2, 10/2, 2/2));
+    floorBody = new CANNON.Body({mass:0});
+    floorBody.addShape(floorShape);
+    floorBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1,0,0),-Math.PI/2);
+    floorBody.position.copy(floor.position);
+    world.addBody(floorBody);
+
 
     //cube with physics
     const boxGeometry = new THREE.BoxGeometry(0.5, 0.5, 0.5);
     const boxMaterial = new THREE.MeshPhongMaterial( {color: 0x220000} );
     box = new THREE.Mesh(boxGeometry, boxMaterial);
-    box.position.set(0,40,0);
+    box.position.set(0,10,0);
     box.castShadow = true;
     box.receiveShadow = true;
     scene.add(box);
-    physics.addMesh(box, 1);
+    const boxShape = new CANNON.Box(new CANNON.Vec3(0.5/2, 0.5/2, 0.5/2));
+    boxBody = new CANNON.Body({mass:1});
+    boxBody.addShape(boxShape);
+    boxBody.position.copy(box.position);
+    world.addBody(boxBody);
 
     // lights
     const dirLight = new THREE.DirectionalLight( 0xffffff, 1.0 );
@@ -77,7 +108,7 @@ async function init() {
     scene.add(ambLight);
 
     //load alex (character) and animations
-    player = new Player(new THREE.Vector3(0,0,0), scene, physics);
+    player = new Player(new THREE.Vector3(0,0,0), scene, world);
 
     window.addEventListener( 'resize', onWindowResize );
 }
@@ -96,13 +127,20 @@ function update() {
     if (!loaded) {
         requestAnimationFrame( update );
 
-        
+        loaded = player.loaded;        
     }
     else {
         requestAnimationFrame( update );
 
         //alexMixer.update(0.01);
         deltaTime = clock.getDelta();
+        world.step(1/60);
+        box.position.copy(boxBody.position);
+        box.quaternion.copy(boxBody.quaternion);
+
+        //console.log(boxBody.position);
+
+
         player.update(deltaTime);
 
         //console.log(box.position);
