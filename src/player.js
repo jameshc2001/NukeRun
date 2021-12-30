@@ -78,15 +78,14 @@ export class Player {
 
                 //add player to scene
                 this.model = alex;
-                this.model.add(this.camera); //add camera to player
                 this.model.position.copy(this.position);
                 scene.add(this.model);
 
                 //setup controls
                 const firstPersonOffset = new THREE.Vector3(0,0,0);
-                const thirdPersonOffset = new THREE.Vector3(0, 200, -200);
-                const target = new THREE.Vector3(0,1.4,0);
-                this.controls = new CameraControls(this.camera, firstPersonOffset, thirdPersonOffset, target, this.model, document.body);
+                const thirdPersonOffset = new THREE.Vector3(0, 2, -2);
+                const targetOffset = new THREE.Vector3(0,1.4,0);
+                this.controls = new CameraControls(this.camera, thirdPersonOffset, this.model, targetOffset, document.body);
 
                 //we just finished loading
                 this.loaded = true;
@@ -132,6 +131,9 @@ export class Player {
 
         //use velocity to figure out what animation to play
 
+        //console.log(this.camera.position);
+        //this.controls.update();
+
         this.bodyHelper.position.copy(this.body.position);
         this.bodyHelper.quaternion.copy(this.body.quaternion);
 
@@ -146,11 +148,13 @@ export class Player {
         //console.log(this.direction);
 
         //rotate model
-        // if (this.input.wKey || this.input.sKey || this.input.aKey || this.input.dKey) {
-        //     const angle = this.modelForwards.angleTo(this.direction);
-        //     this.modelForwards.copy(this.direction);
-        //     this.model.rotation.y -= angle;
-        // }
+        if (this.input.wKey || this.input.sKey || this.input.aKey || this.input.dKey) {
+            var angle = this.modelForwards.angleTo(this.direction);
+            // this.modelForwards.copy(this.direction);
+            if (this.direction.x < 0) angle *= -1;
+            this.model.rotation.y = angle;
+            console.log(angle);
+        }
         //console.log(this.camera.position);
 
 
@@ -222,6 +226,7 @@ export class Player {
         const diff = new THREE.Vector3()
         diff.copy(newPos);
         diff.sub(prevPos);
+        this.camera.position.add(diff); //update camera position
         //console.log(diff.length());
     }
 }

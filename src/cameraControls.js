@@ -25,7 +25,7 @@ const _PI_2 = Math.PI / 2;
 
 class CameraControls extends EventDispatcher {
 
-	constructor( camera, firstPersonOffset, thirdPersonOffset, target, worldTarget, domElement ) {
+	constructor( camera, initialPosition, target, targetOffset, domElement ) {
 
 		super();
 
@@ -46,18 +46,14 @@ class CameraControls extends EventDispatcher {
 		this.minPolarAngle = 0; // radians
 		this.maxPolarAngle = Math.PI; // radians
 
-        //set camera's position
-        this.firstPersonOffset = firstPersonOffset;
-        this.thirdPersonOffset = thirdPersonOffset;
         this.target = target;
-        //this.worldTarget = worldTarget;
-        camera.position.copy(this.target);
-        camera.position.add(this.thirdPersonOffset);
-        const worldPosition = new Vector3(0,0,0);
-        worldPosition.copy(worldTarget.position);
-        worldPosition.add(this.target);
-        camera.lookAt(worldPosition);
-        this.firstPerson = false; //start in third person mode
+        this.targetOffset = targetOffset;
+
+        //set initial properties
+        camera.position.copy(initialPosition);
+        const initialLookAt = new Vector3(0,0,0);
+        initialLookAt.add(this.target.position).add(this.targetOffset);
+        camera.lookAt(initialLookAt);
 
 		const scope = this;
 
@@ -88,22 +84,24 @@ class CameraControls extends EventDispatcher {
             else { //third person
                 const polar = new Spherical(); //working in polar coordinates
 
+
+
+
                 //apply rotation
                 //console.log(scope.target);
-                camera.position.sub(scope.target); //move to origin
+                camera.position.sub(scope.target.position).sub(scope.targetOffset); //move to origin be about origin
                 polar.setFromVector3(camera.position);
                 polar.phi -= movementY * 0.002;
                 polar.theta -= movementX * 0.002;
 
                 //apply and add offset
                 camera.position.setFromSpherical(polar);
-                camera.position.add(scope.target);
+                const targetWorldPos = new Vector3(0,0,0);
+                targetWorldPos.add(scope.target.position).add(scope.targetOffset);
+                camera.position.add(targetWorldPos);
 
                 //make camera look at proper world position
-                const worldPosition = new Vector3(0,0,0);
-                worldPosition.copy(worldTarget.position);
-                worldPosition.add(scope.target);
-                camera.lookAt(worldPosition);
+                camera.lookAt(targetWorldPos);
             }
 
 			scope.dispatchEvent( _changeEvent );
