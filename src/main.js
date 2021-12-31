@@ -39,6 +39,7 @@ function init() {
                                                             0.3  // restitution
                                                             );
     world.defaultContactMaterial.friction = 0;
+    world.defaultContactMaterial.restitution = 0;
 
     // renderer
     renderer = new THREE.WebGLRenderer( {canvas} );
@@ -68,7 +69,7 @@ function init() {
     scene.add( floor );
     //now create floor but for cannon
     const floorShape = new CANNON.Box(new CANNON.Vec3(10/2, 10/2, 2/2));
-    floorBody = new CANNON.Body({mass:0});
+    floorBody = new CANNON.Body({mass:0,collisionFilterGroup: 1,collisionFilterMask: 1 | 2 | 4});
     floorBody.addShape(floorShape);
     floorBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1,0,0),-Math.PI/2);
     floorBody.position.copy(floor.position);
@@ -84,7 +85,7 @@ function init() {
     box.receiveShadow = true;
     scene.add(box);
     const boxShape = new CANNON.Box(new CANNON.Vec3(0.5/2, 0.5/2, 0.5/2));
-    boxBody = new CANNON.Body({mass:1});
+    boxBody = new CANNON.Body({mass:1,collisionFilterGroup: 1,collisionFilterMask: 1 | 2 | 4});
     boxBody.addShape(boxShape);
     boxBody.position.copy(box.position);
     world.addBody(boxBody);

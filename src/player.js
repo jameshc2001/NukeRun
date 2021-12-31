@@ -10,12 +10,15 @@ export class Player {
     mixer;
     input;
     actions = {};
+    currentAction;
     speed;
 
     world; //physics world
     body; //rigid body
     bodyHelper;
     velocity;
+    canJump;
+    jumpForce;
 
     camera
     controls;
@@ -34,6 +37,9 @@ export class Player {
         this.velocity = new THREE.Vector3(0,0,0);
         this.speed = 4;
         this.modelForwards = new THREE.Vector3(0,0,1);
+        this.currentAction = 'idle';
+        this.canJump = true;
+        this.jumpForce = 6;
 
         //create cameras
         const fov = 75;
@@ -75,6 +81,15 @@ export class Player {
                     //this.actions[1].play();
                     //this.actions['fall'].play();
                 });
+                animation.load('Left Strafe.fbx', (left) => {
+                    this.actions['left'] = this.mixer.clipAction(left.animations[0]);
+                });
+                animation.load('Right Strafe.fbx', (right) => {
+                    this.actions['right'] = this.mixer.clipAction(right.animations[0]);
+                });
+                animation.load('Running Backward.fbx', (backwards) => {
+                    this.actions['backwards'] = this.mixer.clipAction(backwards.animations[0]);
+                });
 
                 //add player to scene
                 this.model = alex;
@@ -112,7 +127,7 @@ export class Player {
 
             const shape = new CANNON.Box(new CANNON.Vec3(0.25/2, 1.6/2, 0.25/2));
             //const shape = CANNON.BO
-            scope.body = new CANNON.Body({mass:1});
+            scope.body = new CANNON.Body({mass:1, collisionFilterGroup: 4, collisionFilterMask: 1});
             //scope.body.angularFactor.y = 0;
             scope.body.addShape(shape);
             scope.body.position.copy(scope.bodyHelper.position);
@@ -126,17 +141,10 @@ export class Player {
     }
 
     update(deltaTime) {
-        this.mixer.update(deltaTime);
-        //this.position.add(new THREE.Vector3(1,0,0).multiplyScalar(deltaTime));
-
-        //use velocity to figure out what animation to play
-
-        //console.log(this.camera.position);
-        //this.controls.update();
+        const prevAction = this.currentAction;
 
         this.bodyHelper.position.copy(this.body.position);
         this.bodyHelper.quaternion.copy(this.body.quaternion);
-
 
         //update direction
         this.direction.copy(this.body.position);
@@ -145,75 +153,79 @@ export class Player {
         this.direction.normalize();
         this.sideways.crossVectors(this.direction, this.up);
 
-        //console.log(this.direction);
-
-        //rotate model
+        // //rotate model
         if (this.input.wKey || this.input.sKey || this.input.aKey || this.input.dKey) {
             var angle = this.modelForwards.angleTo(this.direction);
-            // this.modelForwards.copy(this.direction);
             if (this.direction.x < 0) angle *= -1;
             this.model.rotation.y = angle;
-            console.log(angle);
         }
-        //console.log(this.camera.position);
 
 
         if (this.input.escKey) this.controls.unlock(); //unlock and lock too quickly gives error
 
-        // if (this.input.wKey) this.position.add(new THREE.Vector3(0,0,1).multiplyScalar(deltaTime));
-        // if (this.input.sKey) this.position.add(new THREE.Vector3(0,0,-1).multiplyScalar(deltaTime));
-
-        // if (this.input.aKey) this.position.add(new THREE.Vector3(1,0,0).multiplyScalar(deltaTime));
-        // if (this.input.dKey) this.position.add(new THREE.Vector3(-1,0,0).multiplyScalar(deltaTime));
-
         if (this.input.wKey) {
+            this.currentAction = 'run';
             this.velocity.copy(this.direction);
             this.velocity.multiplyScalar(this.speed);
         }
         if (this.input.sKey) {
+            this.currentAction = 'backwards';
             this.velocity.copy(this.direction);
             this.velocity.multiplyScalar(-this.speed);
         }
 
         if (this.input.aKey) {
+            this.currentAction = 'left';
             this.velocity.copy(this.sideways);
             this.velocity.multiplyScalar(-this.speed);
         }
         if (this.input.dKey)  {
+            this.currentAction = 'right';
             this.velocity.copy(this.sideways);
             this.velocity.multiplyScalar(this.speed);
         }
 
         if (this.input.wKey && this.input.aKey) {
+            this.currentAction = 'leftrun';
             this.velocity.copy(this.sideways);
             this.velocity.multiplyScalar(-1);
             this.velocity.add(this.direction);
             this.velocity.multiplyScalar(this.speed/Math.SQRT2);
         }
         if (this.input.wKey && this.input.dKey) {
+            this.currentAction = 'rightrun';
             this.velocity.copy(this.sideways);
             //this.velocity.multiplyScalar(-1);
             this.velocity.add(this.direction);
             this.velocity.multiplyScalar(this.speed/Math.SQRT2);
         }
         if (this.input.sKey && this.input.aKey) {
+            this.currentAction = 'leftbackwards';
             this.velocity.copy(this.sideways);
             this.velocity.add(this.direction);
             this.velocity.multiplyScalar(-this.speed/Math.SQRT2);
         }
         if (this.input.sKey && this.input.dKey) {
+            this.currentAction = 'rightbackwards';
             this.velocity.copy(this.direction);
             this.velocity.multiplyScalar(-1);
             this.velocity.add(this.sideways);
             this.velocity.multiplyScalar(this.speed/Math.SQRT2);
         }
 
-        if (!this.input.wKey && !this.input.sKey && !this.input.aKey && !this.input.dKey) this.velocity.set(0,0,0);
+        if (!this.input.wKey && !this.input.sKey && !this.input.aKey && !this.input.dKey) {
+            this.velocity.set(0,0,0); //need to change this for adding jumping
+            this.velocity.x = 0;
+            this.velocity.z = 0;
+            if (this.canJump) this.currentAction = 'idle';
+        }
+
+        if(this.input.spaceKey && this.canJump) {
+            this.body.velocity.y = this.jumpForce;
+        }
 
         this.body.velocity.x = this.velocity.x;
         this.body.velocity.z = this.velocity.z;
-
-        //console.log(this.body.velocity.length());
 
         const prevPos = new THREE.Vector3();
         prevPos.copy(this.model.position);
@@ -227,7 +239,44 @@ export class Player {
         diff.copy(newPos);
         diff.sub(prevPos);
         this.camera.position.add(diff); //update camera position
-        //console.log(diff.length());
+
+        //check if we are on the ground
+        var from = new CANNON.Vec3();
+        var to = new CANNON.Vec3();
+        from.copy(this.body.position);
+        to.copy(this.body.position);
+        from.y -= 0.7;
+        to.y -= 1;
+        const ray = new CANNON.Ray(from, to);
+        this.canJump = ray.intersectWorld(this.world, {collisionFilterGroup: 2, collisionFilterMask: 1});
+        if (!this.canJump) this.currentAction = 'fall';
+
+        //update animations
+        if (prevAction != this.currentAction) this.updateAnimations(this.currentAction);
+        this.mixer.update(deltaTime);
+    }
+
+    updateAnimations(a) {
+        this.mixer.stopAllAction();
+        if (a == 'run' || a == 'left' || a == 'backwards' || a == 'right' || a == 'idle' || a == 'fall') this.actions[a].play();
+        else {
+            if (a == 'leftrun') {
+                this.actions['left'].play();
+                this.actions['run'].play().syncWith(this.actions['left']);
+            }
+            else if (a == 'rightrun') {
+                this.actions['right'].play();
+                this.actions['run'].play().syncWith(this.actions['right']);
+            }
+            else if (a == 'leftbackwards') {
+                this.actions['right'].play();
+                this.actions['backwards'].play().syncWith(this.actions['right']);
+            }
+            else if (a == 'rightbackwards') {
+                this.actions['left'].play();
+                this.actions['backwards'].play().syncWith(this.actions['left']);
+            }
+        }
     }
 }
 
