@@ -1,11 +1,13 @@
 import * as THREE from '../Common/build/three.module.js';
 import { OrbitControls } from '../Common/examples/jsm/controls/OrbitControls.js';
 import { Level } from './level.js';
+import { Resources } from './resources.js';
 
 let scene, renderer, canvas, camera, controls
 let plane1, plane2, cube;
 
 let level;
+let resources;
 
 //load models and set up test scene
 function init() {
@@ -19,6 +21,7 @@ function init() {
     renderer.setSize( window.innerWidth, window.innerHeight );
 
     level = new Level(renderer);
+    resources = new Resources();
 
     //camera
     const fov = 75;
