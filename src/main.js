@@ -1,13 +1,11 @@
 import * as THREE from '../Common/build/three.module.js';
 import { OrbitControls } from '../Common/examples/jsm/controls/OrbitControls.js';
+import { Level } from './level.js';
 
 let scene, renderer, canvas, camera, controls
-let loaded = false;
-
-let clock = new THREE.Clock();
-let deltaTime = 0;
-
 let plane1, plane2, cube;
+
+let level;
 
 //load models and set up test scene
 function init() {
@@ -19,6 +17,8 @@ function init() {
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.setPixelRatio( window.devicePixelRatio );
     renderer.setSize( window.innerWidth, window.innerHeight );
+
+    level = new Level(renderer);
 
     //camera
     const fov = 75;
@@ -81,7 +81,9 @@ function init() {
     //set up buttons
     document.getElementById('level1Button').onclick = function() {
         console.log('loading level 1');
-        
+        document.getElementById('mainMenu').style.display = "none";
+        level.load(0);
+
     }
 }
 
@@ -89,8 +91,13 @@ function init() {
 function onWindowResize() {
     const aspect = window.innerWidth / window.innerHeight;
 
-    camera.aspect = aspect;
-    camera.updateProjectionMatrix();
+    if (level.loaded) {
+        level.handleResize(aspect);
+    }
+    else {
+        camera.aspect = aspect;
+        camera.updateProjectionMatrix();
+    }
 
     renderer.setSize( window.innerWidth, window.innerHeight );
 }
@@ -98,7 +105,13 @@ function onWindowResize() {
 function update() {
     requestAnimationFrame( update );
 
-    renderer.render( scene, camera );
+    if (level.loaded) {
+        level.update();
+        level.render();
+    }
+    else {
+        renderer.render( scene, camera );
+    }
 }
 
 

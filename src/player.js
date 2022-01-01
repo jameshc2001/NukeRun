@@ -302,6 +302,7 @@ class PlayerInput {
     }
 
     onKeyDown(e) {
+        console.log('hi?')
         switch(e.keyCode) {
             case 87: this.wKey = true; break;
             case 65: this.aKey = true; break;
