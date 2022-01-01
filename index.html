@@ -9,10 +9,21 @@
 </head>
 
 <body>
-   <canvas id="gl-canvas" width="1024" height="1024"></canvas>
+    <canvas id="gl-canvas" width="1024" height="1024"></canvas>
 
-   <script src="Common/build/cannon.js"></script> <!--using cannon physics engine-->
-   <script type="module" charset="UTF-8" src="src/main.js"></script>
+    <div id="mainMenu">
+        <h1 style="font-size: 120px; padding-left: 15%; font-family: Arial, Helvetica, sans-serif;">NukeRun</h1>
+        <br/><br/>
+        <button id="howToPlayButton" class="menuButton" type="button">How To Play</button>
+        <br/><br/>
+        <button id="level1Button" class="menuButton" type="button">Play Level 1</button>
+        <br/><br/>
+        <button id="level2Button" class="menuButton" type="button">Play Level 2</button>
+    </div>
+
+
+    <script src="Common/build/cannon.js"></script> <!--using cannon physics engine-->
+    <script type="module" charset="UTF-8" src="src/main.js"></script>
 </body>
 
 </html>

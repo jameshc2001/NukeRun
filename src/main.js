@@ -1,45 +1,17 @@
 import * as THREE from '../Common/build/three.module.js';
-import {Player} from '../src/player.js';
-//import * as CANNON from '../Common/build/cannon.js';
+import { OrbitControls } from '../Common/examples/jsm/controls/OrbitControls.js';
 
-let scene, renderer, canvas
+let scene, renderer, canvas, camera, controls
 let loaded = false;
 
-let player;
 let clock = new THREE.Clock();
 let deltaTime = 0;
 
-let world;
-
-let box;
-let boxBody;
-let floor;
-let floorBody;
-
-let physicsMaterial;
+let plane1, plane2, cube;
 
 //load models and set up test scene
 function init() {
     canvas = document.getElementById( "gl-canvas" );
-
-    //set up cannon
-    world = new CANNON.World();
-    world.gravity.set(0,-9.81,0);
-    world.quatNormalizeSkip = 0;
-    world.quatNormalizeFast = false;
-    world.broadphase = new CANNON.NaiveBroadphase();
-    world.solver.iterations = 10;
-    world.defaultContactMaterial.contactEquationStiffness = 1e9;
-    world.defaultContactMaterial.contactEquationRelaxation = 4;
-
-    physicsMaterial = new CANNON.Material("slipperyMaterial");
-    var physicsContactMaterial = new CANNON.ContactMaterial(physicsMaterial,
-                                                            physicsMaterial,
-                                                            0.0, // friction coefficient
-                                                            0.3  // restitution
-                                                            );
-    world.defaultContactMaterial.friction = 0;
-    world.defaultContactMaterial.restitution = 0;
 
     // renderer
     renderer = new THREE.WebGLRenderer( {canvas} );
@@ -48,47 +20,43 @@ function init() {
     renderer.setPixelRatio( window.devicePixelRatio );
     renderer.setSize( window.innerWidth, window.innerHeight );
 
+    //camera
+    const fov = 75;
+    const aspect = window.innerWidth / window.innerHeight;
+    const near = 0.1;
+    const far = 100;
+    camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
+    camera.position.z = -3;
+    camera.position.x = 1.4;
+    camera.position.y = 1.2;
+    camera.lookAt(0,0,0);
+
+    controls = new OrbitControls(camera, renderer.domElement);
+
     // world
     scene = new THREE.Scene();
-    //scene.background = new THREE.Color( 0xcccccc );
+    scene.background = new THREE.Color( 0xcccccc );
 
-    //skybox
-    const skyLoader = new THREE.CubeTextureLoader();
-    skyLoader.setPath( 'Resources/skybox/' );
-    const skybox = skyLoader.load(['1.bmp', '2.bmp', '3.bmp',
-        '4.bmp', '5.bmp', '6.bmp']);
-    scene.background = skybox;
+    const geometryPlane1 = new THREE.PlaneGeometry( 100, 100 );
+    const materialPlane1 = new THREE.MeshPhongMaterial( {color: 0x7a7a7a, side: THREE.DoubleSide} );
+    plane1 = new THREE.Mesh( geometryPlane1, materialPlane1 );
+    plane1.receiveShadow = true;
+    scene.add( plane1 );
 
-    //make a floor, has to be box for collisions
-    const floorGeometry = new THREE.BoxGeometry( 10, 10, 2 );
-    const floorMaterial = new THREE.MeshPhongMaterial( {color: 0x202020} );
-    floor = new THREE.Mesh( floorGeometry, floorMaterial );
-    floor.rotateX( - Math.PI / 2);
-    floor.position.y = -1;
-    floor.receiveShadow = true;
-    scene.add( floor );
-    //now create floor but for cannon
-    const floorShape = new CANNON.Box(new CANNON.Vec3(10/2, 10/2, 2/2));
-    floorBody = new CANNON.Body({mass:0,collisionFilterGroup: 1,collisionFilterMask: 1 | 2 | 4});
-    floorBody.addShape(floorShape);
-    floorBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1,0,0),-Math.PI/2);
-    floorBody.position.copy(floor.position);
-    world.addBody(floorBody);
+    const materialPlane2 = new THREE.MeshPhongMaterial( {color: 0x424242, side: THREE.DoubleSide} );
+    plane2 = new THREE.Mesh(geometryPlane1, materialPlane2);
+    plane2.rotateX( - Math.PI / 2);
+    plane2.position.y = -1;
+    plane2.receiveShadow = true;
+    scene.add(plane2);
 
-
-    //cube with physics
-    const boxGeometry = new THREE.BoxGeometry(0.5, 0.5, 0.5);
-    const boxMaterial = new THREE.MeshPhongMaterial( {color: 0x220000} );
-    box = new THREE.Mesh(boxGeometry, boxMaterial);
-    box.position.set(0,10,0);
-    box.castShadow = true;
-    box.receiveShadow = true;
-    scene.add(box);
-    const boxShape = new CANNON.Box(new CANNON.Vec3(0.5/2, 0.5/2, 0.5/2));
-    boxBody = new CANNON.Body({mass:1,collisionFilterGroup: 1,collisionFilterMask: 1 | 2 | 4});
-    boxBody.addShape(boxShape);
-    boxBody.position.copy(box.position);
-    world.addBody(boxBody);
+    const geometryBox = new THREE.BoxGeometry( 1, 1, 1 );
+    const materialBox = new THREE.MeshPhongMaterial( {color: 0x00ff00} );
+    cube = new THREE.Mesh( geometryBox, materialBox );
+    cube.position.x = -1.4;
+    cube.castShadow = true;
+    cube.receiveShadow = true;
+    scene.add( cube );
 
     // lights
     const dirLight = new THREE.DirectionalLight( 0xffffff, 1.0 );
@@ -105,56 +73,34 @@ function init() {
     const helper = new THREE.CameraHelper( dirLight.shadow.camera );
     scene.add( helper );
 
-    const ambLight = new THREE.AmbientLight(0xffffff, 4.0 );
+    const ambLight = new THREE.AmbientLight(0xffffff, 0.5 );
     scene.add(ambLight);
 
-    //load alex (character) and animations
-    player = new Player(new THREE.Vector3(0,0,0), scene, world);
-
     window.addEventListener( 'resize', onWindowResize );
+
+    //set up buttons
+    document.getElementById('level1Button').onclick = function() {
+        console.log('loading level 1');
+        
+    }
 }
 
 
 function onWindowResize() {
     const aspect = window.innerWidth / window.innerHeight;
 
-    player.camera.aspect = aspect;
-    player.camera.updateProjectionMatrix();
+    camera.aspect = aspect;
+    camera.updateProjectionMatrix();
 
     renderer.setSize( window.innerWidth, window.innerHeight );
 }
 
 function update() {
-    if (!loaded) {
-        requestAnimationFrame( update );
+    requestAnimationFrame( update );
 
-        loaded = player.loaded;        
-    }
-    else {
-        requestAnimationFrame( update );
-
-        //alexMixer.update(0.01);
-        deltaTime = clock.getDelta();
-        world.step(1/60);
-        box.position.copy(boxBody.position);
-        box.quaternion.copy(boxBody.quaternion);
-
-        //console.log(boxBody.position);
-
-
-        player.update(deltaTime);
-
-        //console.log(box.position);
-
-        //controls.update();
-        renderer.render( scene, player.camera );
-    }
+    renderer.render( scene, camera );
 }
 
 
 init();
-
-//add wait here?
-
-
 update();
