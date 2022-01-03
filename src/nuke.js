@@ -14,6 +14,12 @@ export class Nuke {
         const y = 1;
         const z = 1;
 
+        const shape = new CANNON.Box(new CANNON.Vec3(x/2, y/2, z/2));
+        this.body = new CANNON.Body({mass:2,material:physicsMaterial, collisionFilterGroup: 1,collisionFilterMask: 1 | 2 | 4});
+        this.body.addShape(shape, new CANNON.Vec3(0.25,0,0)); //small offset
+        this.body.position.copy(position);
+        world.addBody(this.body);
+
         const geometry = new THREE.BoxGeometry( x, y, z );
         const wireframe = new THREE.WireframeGeometry(geometry);
         this.helper = new THREE.LineSegments(wireframe);
@@ -21,13 +27,7 @@ export class Nuke {
         this.helper.material.opacity = 0.25;
         this.helper.material.transparent = true;
         this.helper.position.copy(position);
-        scene.add(this.helper);
-
-        const shape = new CANNON.Box(new CANNON.Vec3(x/2, y/2, z/2));
-        this.body = new CANNON.Body({mass:2,material:physicsMaterial, collisionFilterGroup: 1,collisionFilterMask: 1 | 2 | 4});
-        this.body.addShape(shape);
-        this.body.position.copy(position);
-        world.addBody(this.body);
+        scene.add(this.helper); //helper doesnt have offset so cant be completely trusted
     }
 
     update() {
