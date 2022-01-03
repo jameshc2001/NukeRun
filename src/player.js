@@ -1,6 +1,7 @@
 import * as THREE from '../Common/build/three.module.js';
 import {FBXLoader} from '../Common/examples/jsm/loaders/FBXLoader.js';
 import { CameraControls } from './cameraControls.js';
+import * as SkeletonUtils from '../Common/examples/jsm/utils/SkeletonUtils.js';
 
 export class Player {
     loaded = false;
@@ -27,7 +28,7 @@ export class Player {
     sideways;
     modelForwards;
 
-    constructor(position, scene, world) {
+    constructor(position, scene, world, resources) {
         this.position = position;
         this.input = new PlayerInput();
         this.world = world;
@@ -49,65 +50,20 @@ export class Player {
 
         this.camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
 
-        //load the model and animations
-        const fbxLoader = new FBXLoader();
-        fbxLoader.setPath('Resources/alex/');
-        fbxLoader.load(
-            'Alex.fbx',
-            (alex) => {
-                //need to find child mesh and set cast shadows to true
-                let mesh;
-                alex.traverse(child => { 
-                    child.castShadow = true;
-                    if (child.isMesh) mesh = child;
-                });
-                alex.scale.setScalar(0.01);
-                alex.castShadow = true;
-
-                //get the animations
-                this.mixer = new THREE.AnimationMixer(alex);
-                const animation = new FBXLoader();
-                animation.setPath('Resources/alex/');
-                animation.load('Idle.fbx', (idle) => {
-                    this.actions['idle'] = this.mixer.clipAction(idle.animations[0]);
-                    this.actions['idle'].play();
-                });
-                animation.load('Running.fbx', (run) => {
-                    this.actions['run'] = this.mixer.clipAction(run.animations[0]);
-                    //this.actions[1].play();
-                });
-                animation.load('Falling Idle.fbx', (fall) => {
-                    this.actions['fall'] = this.mixer.clipAction(fall.animations[0]);
-                    //this.actions[1].play();
-                    //this.actions['fall'].play();
-                });
-                animation.load('Left Strafe.fbx', (left) => {
-                    this.actions['left'] = this.mixer.clipAction(left.animations[0]);
-                });
-                animation.load('Right Strafe.fbx', (right) => {
-                    this.actions['right'] = this.mixer.clipAction(right.animations[0]);
-                });
-                animation.load('Running Backward.fbx', (backwards) => {
-                    this.actions['backwards'] = this.mixer.clipAction(backwards.animations[0]);
-                });
-
-                //add player to scene
-                this.model = alex;
-                this.model.position.copy(this.position);
-                scene.add(this.model);
-
-                //setup controls
-                const firstPersonOffset = new THREE.Vector3(0,0,0);
-                const thirdPersonOffset = new THREE.Vector3(0, 2, -2);
-                const targetOffset = new THREE.Vector3(0,1.4,0);
-                this.controls = new CameraControls(this.camera, thirdPersonOffset, this.model, targetOffset, document.body);
-
-                //we just finished loading
-                this.loaded = true;
-
-                setupPhysics(this);
-            }
-        );
+        this.model = SkeletonUtils.clone(resources.playerModel);
+        this.mixer = new THREE.AnimationMixer(this.model);
+        this.actions['idle'] = this.mixer.clipAction(resources.playerAnimations['idle']);
+        this.actions['run'] = this.mixer.clipAction(resources.playerAnimations['run']);
+        this.actions['fall'] = this.mixer.clipAction(resources.playerAnimations['fall']);
+        this.actions['left'] = this.mixer.clipAction(resources.playerAnimations['left']);
+        this.actions['right'] = this.mixer.clipAction(resources.playerAnimations['right']);
+        this.actions['backwards'] = this.mixer.clipAction(resources.playerAnimations['backwards']);
+        this.model.position.copy(this.position);
+        scene.add(this.model);
+        const thirdPersonOffset = new THREE.Vector3(0, 2, -2);
+        const targetOffset = new THREE.Vector3(0,1.4,0);
+        this.controls = new CameraControls(this.camera, thirdPersonOffset, this.model, targetOffset, document.body);
+        setupPhysics(this);
 
         function setupPhysics(scope) {
             const geometry = new THREE.BoxGeometry( 0.25, 1.6, 0.25 );
@@ -138,6 +94,8 @@ export class Player {
 
         //add listener for getting camera lock
         document.addEventListener('click', function() {this.controls.lock();}.bind(this));
+
+        this.loaded = true;
     }
 
     update(deltaTime) {
@@ -302,7 +260,6 @@ class PlayerInput {
     }
 
     onKeyDown(e) {
-        console.log('hi?')
         switch(e.keyCode) {
             case 87: this.wKey = true; break;
             case 65: this.aKey = true; break;

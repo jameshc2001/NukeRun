@@ -4,14 +4,18 @@ import { Level } from './level.js';
 import { Resources } from './resources.js';
 
 let scene, renderer, canvas, camera, controls
-let plane1, plane2, cube;
+let plane1, plane2, cube, nuke
 
 let level;
 let resources;
+let clock;
+let deltaTime;
 
 //load models and set up test scene
 function init() {
     canvas = document.getElementById( "gl-canvas" );
+    clock = new THREE.Clock();
+    deltaTime = 0;
 
     // renderer
     renderer = new THREE.WebGLRenderer( {canvas} );
@@ -19,9 +23,11 @@ function init() {
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.setPixelRatio( window.devicePixelRatio );
     renderer.setSize( window.innerWidth, window.innerHeight );
+    // renderer.outputEncoding = THREE.sRGBEncoding;
 
-    level = new Level(renderer);
+    //set up level and load resources
     resources = new Resources();
+    level = new Level(renderer, resources);
 
     //camera
     const fov = 75;
@@ -53,13 +59,13 @@ function init() {
     plane2.receiveShadow = true;
     scene.add(plane2);
 
-    const geometryBox = new THREE.BoxGeometry( 1, 1, 1 );
-    const materialBox = new THREE.MeshPhongMaterial( {color: 0x00ff00} );
-    cube = new THREE.Mesh( geometryBox, materialBox );
-    cube.position.x = -1.4;
-    cube.castShadow = true;
-    cube.receiveShadow = true;
-    scene.add( cube );
+    // const geometryBox = new THREE.BoxGeometry( 1, 1, 1 );
+    // const materialBox = new THREE.MeshPhongMaterial( {color: 0x00ff00} );
+    // cube = new THREE.Mesh( geometryBox, materialBox );
+    // cube.position.x = -1.4;
+    // cube.castShadow = true;
+    // cube.receiveShadow = true;
+    // scene.add( cube );
 
     // lights
     const dirLight = new THREE.DirectionalLight( 0xffffff, 1.0 );
@@ -84,6 +90,7 @@ function init() {
     //set up buttons
     document.getElementById('level1Button').onclick = function() {
         console.log('loading level 1');
+        console.log(resources.totalLoaded);
         document.getElementById('mainMenu').style.display = "none";
         level.load(0);
 
@@ -107,12 +114,23 @@ function onWindowResize() {
 
 function update() {
     requestAnimationFrame( update );
+    deltaTime = clock.getDelta();
 
     if (level.loaded) {
-        level.update();
+        level.update(deltaTime);
         level.render();
     }
     else {
+        if (nuke == null && resources.loaded()) {
+            nuke = resources.nukeModel.clone();
+            nuke.position.set(-0.2,0.7,-1.7);
+            scene.add(nuke);
+        }
+        if (nuke != null) {
+            nuke.rotation.y += deltaTime;
+            nuke.position.y = 0.7 + Math.cos(clock.getElapsedTime()) * 0.25;
+        }
+
         renderer.render( scene, camera );
     }
 }
