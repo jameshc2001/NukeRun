@@ -61,32 +61,29 @@ export class Player {
         this.model.position.copy(this.position);
         scene.add(this.model);
         const thirdPersonOffset = new THREE.Vector3(0, 2, -2);
+        thirdPersonOffset.add(position);
         const targetOffset = new THREE.Vector3(0,1.4,0);
         this.controls = new CameraControls(this.camera, thirdPersonOffset, this.model, targetOffset, document.body);
         setupPhysics(this);
 
         function setupPhysics(scope) {
-            const geometry = new THREE.BoxGeometry( 0.25, 1.6, 0.25 );
-            //const material = new THREE.MeshBasicMaterial( {color: 0xffff00} );
-            const wireframe = new THREE.WireframeGeometry(geometry);
-            //const cylinder = new THREE.Mesh( geometry, material );
-            scope.bodyHelper = new THREE.LineSegments(wireframe);
-            scope.bodyHelper.material.depthTest = false;
-            scope.bodyHelper.material.opacity = 0.25;
-            scope.bodyHelper.material.transparent = true;
-            scope.bodyHelper.position.copy(position);
-            scope.bodyHelper.position.y += 0.8;
+            const pos = new THREE.Vector3();
+            pos.copy(position);
+            pos.y += 0.8;
 
-            scene.add( scope.bodyHelper );
-            // cylinder.position.y = 0.8;
-            // scene.add( cylinder );
+            // const geometry = new THREE.BoxGeometry( 0.25, 1.6, 0.25 );
+            // const wireframe = new THREE.WireframeGeometry(geometry);
+            // scope.bodyHelper = new THREE.LineSegments(wireframe);
+            // scope.bodyHelper.material.depthTest = false;
+            // scope.bodyHelper.material.opacity = 0.25;
+            // scope.bodyHelper.material.transparent = true;
+            // scope.bodyHelper.position.copy(pos);
+            // scene.add( scope.bodyHelper );
 
             const shape = new CANNON.Box(new CANNON.Vec3(0.25/2, 1.6/2, 0.25/2));
-            //const shape = CANNON.BO
             scope.body = new CANNON.Body({mass:1, collisionFilterGroup: 4, collisionFilterMask: 1});
-            //scope.body.angularFactor.y = 0;
             scope.body.addShape(shape);
-            scope.body.position.copy(scope.bodyHelper.position);
+            scope.body.position.copy(pos);
             scope.body.fixedRotation = true;
             scope.body.updateMassProperties(); //very important line of code
             world.addBody(scope.body);
@@ -101,8 +98,10 @@ export class Player {
     update(deltaTime) {
         const prevAction = this.currentAction;
 
-        this.bodyHelper.position.copy(this.body.position);
-        this.bodyHelper.quaternion.copy(this.body.quaternion);
+        if (this.bodyHelper != null) {
+            this.bodyHelper.position.copy(this.body.position);
+            this.bodyHelper.quaternion.copy(this.body.quaternion);
+        }
 
         //update direction
         this.direction.copy(this.body.position);
@@ -116,6 +115,9 @@ export class Player {
             var angle = this.modelForwards.angleTo(this.direction);
             if (this.direction.x < 0) angle *= -1;
             this.model.rotation.y = angle;
+
+            //for dev
+            //console.log(this.body.position);
         }
 
 

@@ -2,6 +2,7 @@ import * as THREE from '../Common/build/three.module.js';
 import {Player} from '../src/player.js';
 import { Nuke } from './nuke.js';
 //import * as CANNON from '../Common/build/cannon.js';
+import {Water} from '../Common/examples/jsm/objects/Water2.js';
 
 export class Level {
 
@@ -15,6 +16,7 @@ export class Level {
 
     player;
     nuke;
+    water;
 
     world;
 
@@ -35,7 +37,56 @@ export class Level {
     load(levelID) {
         this.levelID = levelID;
 
-        //set up cannon
+        this.standardSetup();
+
+        if (this.levelID == 0) {
+            this.addCrate(new THREE.Vector3(-0.34, -0.4, -13), 0.1)
+            this.addCrate(new THREE.Vector3(-1, -0.4, -8), 1.2)
+            this.addLog(new THREE.Vector3(-2.4, -0.42, -3.6), -0.1);
+            this.addLog(new THREE.Vector3(-1.9, -0.42, 1), 0.3);
+            this.addLog(new THREE.Vector3(-0.1, -0.42, 5), 0.2);
+            this.addCrate(new THREE.Vector3(2, -0.4, 9), 1.7)
+        }
+        else {
+            this.addLog(new THREE.Vector3(3, -0.42, -12.5), 0.5);
+            this.addLog(new THREE.Vector3(5, -0.42, -8.8), 0.7);
+            this.addLog(new THREE.Vector3(8.1, -0.42, -4.5), 0.1);
+            this.addLog(new THREE.Vector3(6, -0.42, 0.5), -0.9);
+            this.addLog(new THREE.Vector3(2, -0.42, 2.1), -1.9);
+            this.addLog(new THREE.Vector3(-2, -0.42, 0), -1.6);
+
+            const stackStart = new THREE.Vector3(-6, -1.85, 2.8);
+            for (let x = 0; x < 3; x++) {
+                for (let y = 0; y < 4; y++) {
+                    for (let z = 0; z < 3; z++) {
+                        if (z == 1 && y >=3) continue;
+                        if (z == 0 && y >= 2) continue;
+                        const pos = new THREE.Vector3(x * 1.5, y * 1.5, z * 1.5);
+                        pos.add(stackStart);
+                        this.addCrate(pos, 0);
+                    }
+                }
+            }
+
+            this.addLog(new THREE.Vector3(0, -0.42, 10.5), 0.05);
+
+            // this.addCrate(new THREE.Vector3(-6, -1.8, 2.8), 0)
+            // this.addCrate(new THREE.Vector3(-7.5, -1.8, 2.8), 0)
+            // this.addCrate(new THREE.Vector3(-9, -1.8, 2.8), 0)
+            // this.addCrate(new THREE.Vector3(-6, -1.8, 4.3), 0)
+            // this.addCrate(new THREE.Vector3(-7.5, -1.8, 4.3), 0)
+            // this.addCrate(new THREE.Vector3(-9, -1.8, 4.3), 0)
+            // this.addCrate(new THREE.Vector3(-6, -1.8, 4.3), 0)
+            // this.addCrate(new THREE.Vector3(-7.5, -1.8, 4.3), 0)
+            // this.addCrate(new THREE.Vector3(-9, -1.8, 4.3), 0)
+        }
+
+        this.loaded = true; //need to fix this later
+    }
+
+    standardSetup() {
+
+        //set up cannon for physics
         this.world = new CANNON.World();
         this.world.gravity.set(0,-9.81,0);
         this.world.quatNormalizeSkip = 0;
@@ -53,81 +104,95 @@ export class Level {
             this.physicsMaterial, {friction:0.8, restitution:0.3});
         this.world.addContactMaterial(contactMat);
 
-
-        // world
+        // scene
         this.scene = new THREE.Scene();
 
         //skybox
         this.scene.background = this.resources.skybox;
 
-        //make a floor, has to be box for collisions
-        const floorGeometry = new THREE.BoxGeometry( 10, 10, 2 );
-        const floorMaterial = new THREE.MeshPhongMaterial( {color: 0x202020} );
-        this.floor = new THREE.Mesh( floorGeometry, floorMaterial );
-        this.floor.rotateX( - Math.PI / 2);
-        this.floor.position.y = -1;
-        this.floor.receiveShadow = true;
-        this.scene.add( this.floor );
-        //now create floor but for cannon
-        const floorShape = new CANNON.Box(new CANNON.Vec3(10/2, 10/2, 2/2));
-        this.floorBody = new CANNON.Body({mass:0, material:this.physicsMaterial, collisionFilterGroup: 1,collisionFilterMask: 1 | 2 | 4});
-        this.floorBody.addShape(floorShape);
-        this.floorBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1,0,0),-Math.PI/2);
-        this.floorBody.position.copy(this.floor.position);
-        this.world.addBody(this.floorBody);
-
-
-        //cube with physics
-        const boxGeometry = new THREE.BoxGeometry(0.5, 0.5, 0.5);
-        const boxMaterial = new THREE.MeshPhongMaterial( {color: 0x220000} );
-        this.box = new THREE.Mesh(boxGeometry, boxMaterial);
-        this.box.position.set(0,10,0);
-        this.box.castShadow = true;
-        this.box.receiveShadow = true;
-        this.scene.add(this.box);
-        const boxShape = new CANNON.Box(new CANNON.Vec3(0.5/2, 0.5/2, 0.5/2));
-        this.boxBody = new CANNON.Body({mass:1, material:this.physicsMaterial, collisionFilterGroup: 1,collisionFilterMask: 1 | 2 | 4});
-        this.boxBody.addShape(boxShape);
-        this.boxBody.position.copy(this.box.position);
-        this.world.addBody(this.boxBody);
-
-        //this.scene.add(this.resources.trioModel);
-        this.addTree('trio', new THREE.Vector3(2,0,2), 1.6);
-
         // lights
         const dirLight = new THREE.DirectionalLight( 0xffffff, 2.0 );
-        dirLight.position.set( -10, 10, -10 );
+        dirLight.position.set( -100, 100, -100 );
         dirLight.castShadow = true;
         //Set up shadow properties for the light
-        dirLight.shadow.mapSize.width = 512; // default
-        dirLight.shadow.mapSize.height = 512; // default
-        dirLight.shadow.camera.near = 0.5; // default
-        dirLight.shadow.camera.far = 500; // default
+        dirLight.shadow.mapSize.width = 1024;
+        dirLight.shadow.mapSize.height = 1024;
+        dirLight.shadow.camera.near = 0.5;
+        dirLight.shadow.camera.far = 500;
+        dirLight.shadow.camera.right = 20;
+        dirLight.shadow.camera.left = -20;
+        dirLight.shadow.camera.top = 20;
+        dirLight.shadow.camera.bottom = -20;
         dirLight.shadow.bias = 0;
         //add light and helper
         this.scene.add( dirLight );
         const helper = new THREE.CameraHelper( dirLight.shadow.camera );
         this.scene.add( helper );
-
-        const ambLight = new THREE.AmbientLight(0xffffff, 1.8 );
+        //ambient light because everything was too dark
+        const ambLight = new THREE.AmbientLight(0xffffff, 2 );
         this.scene.add(ambLight);
 
-        //load alex (character) and animations
-        this.player = new Player(new THREE.Vector3(0,0,0), this.scene, this.world, this.resources);
-        this.nuke = new Nuke(new THREE.Vector3(-2,3,-2), this.scene, this.world, this.resources, this.physicsMaterial);
+        //add player and nuke
+        this.player = new Player(new THREE.Vector3(-0.5,0.5,-19), this.scene, this.world, this.resources);
+        this.nuke = new Nuke(new THREE.Vector3(-2,2,17), this.scene, this.world, this.resources, this.physicsMaterial, -Math.PI/4);
 
+        //setup skybox
+        this.scene.add(this.resources.terrainModel);
 
-        this.addCrate(new THREE.Vector3(-5,0,-5), Math.PI / 4);
-        this.addCrate(new THREE.Vector3(-7,1,-5), Math.PI / 4);
+        //add water
+        const waterGeometry = new THREE.PlaneGeometry(45,45);
+        this.water = new Water(waterGeometry, {
+            color: 0xf7f0d4,
+            scale: 4,
+            flowDirection: new THREE.Vector2( 1, 1 ),
+            textureWidth: 1024,
+            textureHeight: 1024,
+            normalMap0: this.resources.waterNormal1,
+            normalMap1: this.resources.waterNormal2,
+        });
+        this.water.receiveShadow = true;
+        this.water.castShadow = true;
+        this.water.position.y = -0.05;
+        this.water.rotation.x = Math.PI * - 0.5;
+        this.scene.add(this.water);
 
-        this.addLog(new THREE.Vector3(-8, 0, -8), Math.PI/4);
+        //add colliders for terrain
+        this.addCollider(15,5,7, 0,-2.4,-20, 0); //start floor
+        this.addCollider(1,10,8, 6,0,-20, 0); //start left
+        this.addCollider(1,10,8, -7,0,-20, 0); //start right
+        this.addCollider(15,10,1, 0,0,-24, 0); //start back
+        this.addCollider(35,1,35, 0,-5,0, 0); //river floor
+        this.addCollider(1.6,3,1.6, 16.7,-1.325,2.5, 0); //tree island left
+        this.addCollider(2,3,2, -17.2,-1.325,8.8, 0); //tree island right
+        this.addCollider(10,5,3.5, 0.2,-2.4,16.25, 0); //final island floor 1
+        this.addCollider(8,5,1.5, 0.2,-2.4,13.75, 0); //final island floor 2
+        this.addCollider(8,5,1.5, 0.2,-2.4,18.75, 0); //final island floor 3
+        this.addCollider(2.5,5,1, 1.4,-2.4,20, 0); //final island floor 4
 
-        //this.scene.add(this.resources.nukeModel);
-        // const nuke = this.resources.nukeModel;
-        // this.scene.add(nuke);
-        // console.log(nuke);
+        //add trees for decoration
+        this.addTree('dual', new THREE.Vector3(16.7,0,2.5), 0.6);
+        this.addTree('single', new THREE.Vector3(-17.2,0,8.8), 1.2);
+        this.addTree('trio', new THREE.Vector3(2.5, 0, 17.8), 0.2);
+        this.addTree('single', new THREE.Vector3(3,0,-21.8), 2.7);
+    }
 
-        this.loaded = true; //need to fix this later
+    addCollider(sx, sy, sz, px, py, pz, rotation) {
+        // const colliderGeometry = new THREE.BoxGeometry(sx, sy, sz);
+        // const wire = new THREE.WireframeGeometry(colliderGeometry);
+        // const colliderHelper = new THREE.LineSegments(wire);
+        // colliderHelper.rotation.y = rotation;
+        // colliderHelper.position.set(px, py, pz);
+        // colliderHelper.material.depthTest = false;
+        // colliderHelper.material.opacity = 0.25;
+        // colliderHelper.material.transparent = true;
+        // this.scene.add(colliderHelper)
+
+        const colliderShape = new CANNON.Box(new CANNON.Vec3(sx/2, sy/2, sz/2));
+        const collider = new CANNON.Body({mass:0, material:this.physicsMaterial, collisionFilterGroup: 1,collisionFilterMask: 1 | 2 | 4});
+        collider.addShape(colliderShape);
+        collider.quaternion.setFromEuler(0, rotation, 0);
+        collider.position.set(px,py,pz);
+        this.world.addBody(collider);
     }
 
     addLog(position, rotation) {
@@ -135,17 +200,19 @@ export class Level {
         log.position.copy(position);
         log.rotation.y = rotation;
         this.scene.add(log);
+        
+        // const logGeometry = new THREE.BoxGeometry(0.6, 0.5, 2.5);
+        // const wire = new THREE.WireframeGeometry(logGeometry);
+        // const logHelper = new THREE.LineSegments(wire);
+        // logHelper.rotation.y = rotation;
+        // logHelper.material.depthTest = false;
+        // logHelper.material.opacity = 0.25;
+        // logHelper.material.transparent = true;
+        // logHelper.position.copy(position);
+        // logHelper.position.y += 0.3;
+        // this.scene.add(logHelper);
+
         const logShape = new CANNON.Box(new CANNON.Vec3(0.6/2, 0.5/2, 2.5/2));
-        const logGeometry = new THREE.BoxGeometry(0.6, 0.5, 2.5);
-        const wire = new THREE.WireframeGeometry(logGeometry);
-        const logHelper = new THREE.LineSegments(wire);
-        logHelper.rotation.y = rotation;
-        logHelper.material.depthTest = false;
-        logHelper.material.opacity = 0.25;
-        logHelper.material.transparent = true;
-        logHelper.position.copy(position);
-        logHelper.position.y += 0.3;
-        this.scene.add(logHelper);
         const logBody = new CANNON.Body({mass:0,collisionFilterGroup: 1,collisionFilterMask: 1 | 2 | 4});
         logBody.addShape(logShape);
         logBody.position.copy(position);
@@ -217,11 +284,7 @@ export class Level {
     }
 
     update(deltaTime) {
-        //this.deltaTime = this.clock.getDelta();
         this.world.step(1/60, deltaTime);
-        this.box.position.copy(this.boxBody.position);
-        this.box.quaternion.copy(this.boxBody.quaternion);
-
         this.player.update(deltaTime);
         this.nuke.update();
     }

@@ -18,6 +18,8 @@ export class Resources {
 
     skybox; //textures for skybox
 
+    terrainModel;
+
     singleModel;
     dualModel;
     trioModel;
@@ -28,10 +30,13 @@ export class Resources {
 
     nukeModel;
 
+    waterNormal1;
+    waterNormal2;
+
     constructor() {
         var scope = this;
         this.totalLoaded = 0;
-        this.maxLoaded = 12;
+        this.maxLoaded = 15;
 
         //load player and their animations
         const fbxLoader = new FBXLoader();
@@ -93,9 +98,10 @@ export class Resources {
                 const material = new THREE.MeshPhongMaterial({
                     map: diffuse,
                     color: 0x808080,
+                    //alphaMap: diffuse,
                     normalMap: normal,
                     normalScale: new THREE.Vector2(2,2),
-                    alphaTest: 0.286,
+                    alphaTest: 0.286, //.286 .01
                     shininess: 0.1
                 });
 
@@ -103,6 +109,7 @@ export class Resources {
                 treeLoader.setPath('Resources/trees/');
                 treeLoader.load('PalmTreeSingleStraight.FBX', (single) => {
                     scope.totalLoaded += 1;
+                    single.children.splice(0, 1); //remove one sided leafs
                     single.traverse(child => {
                         child.castShadow = true;
                         child.material = material;
@@ -114,6 +121,7 @@ export class Resources {
                 treeLoader.setPath('Resources/trees/');
                 treeLoader.load('PalmTreeDualStraight.FBX', (dual) => {
                     scope.totalLoaded += 1;
+                    dual.children.splice(1, 1); //remove one sided leafs
                     dual.traverse(child => {
                         child.castShadow = true;
                         child.material = material;
@@ -125,6 +133,7 @@ export class Resources {
                 treeLoader.setPath('Resources/trees/');
                 treeLoader.load('PalmTreeTrio.FBX', (trio) => {
                     scope.totalLoaded += 1;
+                    trio.children.splice(1, 1); //remove one sided leafs
                     trio.traverse(child => {
                         child.castShadow = true;
                         child.material = material;
@@ -156,6 +165,7 @@ export class Resources {
                     scope.crateModel = new THREE.Mesh(crateGeometry, crateMaterial);
                     scope.crateModel.position.y = 0.75;
                     scope.crateModel.castShadow = true;
+                    scope.crateModel.receiveShadow = true;
                 });
             });
         });
@@ -181,6 +191,7 @@ export class Resources {
                         scope.totalLoaded += 1;
                         log.traverse(child => {
                             child.castShadow = true;
+                            child.receiveShadow = true;
                             child.material = logMaterial;
                         });
                         log.scale.setScalar(0.01);
@@ -190,29 +201,7 @@ export class Resources {
             });
         });
 
-        //load nuke
-        // const nukeTextureLoader = new THREE.ImageLoader();
-        // nukeTextureLoader.load('Resources/nuke/nukeDiffuse.png', (texture) => {
-        //     const nukeMaterial = new THREE.MeshPhongMaterial({
-        //         shininess: 0.8,
-        //         map: texture
-        //     });
-        //     const nukeLoader = new OBJLoader();
-        //     nukeLoader.load('Resources/nuke/nuke.obj', (nuke) => {
-        //         console.log(nuke);
-        //         nuke.traverse(child => {
-        //             child.castShadow = true;
-        //             child.material = nukeMaterial;
-        //         });
-        //         // nuke.castShadow = true;
-        //         // nuke.material = nukeMaterial;
-        //         nuke.materialLibraries = null;
-        //         scope.nukeModel = nuke;
-        //     });
-        // });
-
-
-        //load skybox
+        //load skybox and nuke
         const skyLoader = new THREE.CubeTextureLoader();
         skyLoader.setPath( 'Resources/skybox/' );
         skyLoader.load(['1.bmp', '2.bmp', '3.bmp', '4.bmp', '5.bmp', '6.bmp'], (theSkybox) => {
@@ -221,8 +210,6 @@ export class Resources {
             const nukeLoader = new GLTFLoader();
             nukeLoader.load('Resources/nuke/nuke.gltf', (nuke) => {
                 scope.totalLoaded += 1;
-                // const pmrem = new THREE.PMREMGenerator(renderer);
-                // const theEnvMap = pmrem.fromCubemap(theSkybox);
                 nuke.scene.scale.setScalar(0.5);
                 nuke.scene.traverse(child => {
                     if (child.isMesh) {
@@ -240,16 +227,52 @@ export class Resources {
             });
         });
 
+        //load terrain
+        const terrainTextureLoader = new THREE.TextureLoader();
+        terrainTextureLoader.load('Resources/terrain/Sand_007_basecolor.jpg', (texture) => {
+            texture.wrapS = THREE.RepeatWrapping;
+            texture.wrapT = THREE.RepeatWrapping;
+            texture.repeat.set(16,16);
+            const terrainNormalLoader = new THREE.TextureLoader();
+            terrainNormalLoader.load('Resources/terrain/Sand_007_normal.jpg', (normal) => {
+                normal.wrapS = THREE.RepeatWrapping;
+                normal.wrapT = THREE.RepeatWrapping;
+                normal.repeat.set(16,16);
+                const terrainaoLoader = new THREE.TextureLoader();
+                terrainaoLoader.load('Resources/terrain/Sand_007_ambientOcclusion.jpg', (ao) => {
+                    ao.wrapS = THREE.RepeatWrapping;
+                    ao.wrapT = THREE.RepeatWrapping;
+                    ao.repeat.set(16,16);
+                    const terrainHeightLoader = new THREE.TextureLoader();
+                    terrainHeightLoader.load('Resources/terrain/Sand_007_height.png', (height) => {
+                        height.wrapS = THREE.RepeatWrapping;
+                        height.wrapT = THREE.RepeatWrapping;
+                        height.repeat.set(16,16);
+                        const terrainLoader = new GLTFLoader();
+                        terrainLoader.load('Resources/terrain/terrain.gltf', (terrain) => {
+                            scope.totalLoaded += 1;
+                            terrain.scene.traverse(child => {
+                                if (child.isMesh) {
+                                    child.receiveShadow = true;
+                                    child.material.map = texture;
+                                    child.material.normalMap = normal;
+                                    child.material.normalScale = new THREE.Vector2(2,2);
+                                    child.material.aoMap = ao;
+                                    child.material.displacementMap = height;
+                                    child.material.displacementScale = 0.005;
+                                }
+                            });
+                            this.terrainModel = terrain.scene;
+                        });
+                    });
+                });
+            });
+        });
 
-        // //load tree models
-        // fbxLoader.setPath('Resources/trees/');
-        // fbxLoader.load('PalmTreeSingleStraight.FBX', (single) => {
-        //     single.traverse(child => {child.castShadow = true});
-        //     single.castShadow = true;
-        //     single.scale.setScalar(0.01);
-        //     this.singleModel = single;
-        //     console.log(this.singleModel);
-        // });
+        //load water normals
+        const waterLoader = new THREE.TextureLoader();
+        waterLoader.load('Resources/water/Water_1_M_Normal.jpg', (water1) => {scope.totalLoaded += 1; this.waterNormal1 = water1;});
+        waterLoader.load('Resources/water/Water_2_M_Normal.jpg', (water2) => {scope.totalLoaded += 1; this.waterNormal2 = water2;});
     }
 
     loaded() {

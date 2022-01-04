@@ -59,21 +59,13 @@ function init() {
     plane2.receiveShadow = true;
     scene.add(plane2);
 
-    // const geometryBox = new THREE.BoxGeometry( 1, 1, 1 );
-    // const materialBox = new THREE.MeshPhongMaterial( {color: 0x00ff00} );
-    // cube = new THREE.Mesh( geometryBox, materialBox );
-    // cube.position.x = -1.4;
-    // cube.castShadow = true;
-    // cube.receiveShadow = true;
-    // scene.add( cube );
-
     // lights
     const dirLight = new THREE.DirectionalLight( 0xffffff, 1.0 );
     dirLight.position.set( -10, 10, -10 );
     dirLight.castShadow = true;
     //Set up shadow properties for the light
-    dirLight.shadow.mapSize.width = 512; // default
-    dirLight.shadow.mapSize.height = 512; // default
+    dirLight.shadow.mapSize.width = 1024; // default
+    dirLight.shadow.mapSize.height = 1024; // default
     dirLight.shadow.camera.near = 0.5; // default
     dirLight.shadow.camera.far = 500; // default
     dirLight.shadow.bias = 0;
@@ -90,10 +82,13 @@ function init() {
     //set up buttons
     document.getElementById('level1Button').onclick = function() {
         console.log('loading level 1');
-        console.log(resources.totalLoaded);
         document.getElementById('mainMenu').style.display = "none";
         level.load(0);
-
+    }
+    document.getElementById('level2Button').onclick = function() {
+        console.log('loading level 2');
+        document.getElementById('mainMenu').style.display = "none";
+        level.load(1);
     }
 }
 
