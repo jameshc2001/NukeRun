@@ -7,12 +7,14 @@ import {Water} from '../Common/examples/jsm/objects/Water2.js';
 export class Level {
 
     levelID;
+    timer;
 
     resources;
 
     scene;
     renderer;
     loaded;
+    dirLight;
 
     player;
     nuke;
@@ -31,6 +33,12 @@ export class Level {
         this.renderer = renderer;
         this.resources = resources;
         this.loaded = false;
+
+        document.getElementById('retryButton').onclick = function() {
+            console.log('player is retrying');
+            document.getElementById('died').style.display = "none";
+            this.retry();
+        }.bind(this);
     }
 
     //load models and set up test scene
@@ -85,6 +93,9 @@ export class Level {
     }
 
     standardSetup() {
+        this.timer = 30;
+        this.turnOnElement('timer');
+        document.getElementById('timerText').innerHTML = String(this.timer);
 
         //set up cannon for physics
         this.world = new CANNON.World();
@@ -111,23 +122,23 @@ export class Level {
         this.scene.background = this.resources.skybox;
 
         // lights
-        const dirLight = new THREE.DirectionalLight( 0xffffff, 2.0 );
-        dirLight.position.set( -100, 100, -100 );
-        dirLight.castShadow = true;
+        this.dirLight = new THREE.DirectionalLight( 0xffffff, 2.0 );
+        this.dirLight.position.set( -100, 100, -100 );
+        this.dirLight.castShadow = true;
         //Set up shadow properties for the light
-        dirLight.shadow.mapSize.width = 1024;
-        dirLight.shadow.mapSize.height = 1024;
-        dirLight.shadow.camera.near = 0.5;
-        dirLight.shadow.camera.far = 500;
-        dirLight.shadow.camera.right = 20;
-        dirLight.shadow.camera.left = -20;
-        dirLight.shadow.camera.top = 20;
-        dirLight.shadow.camera.bottom = -20;
-        dirLight.shadow.bias = 0;
+        this.dirLight.shadow.mapSize.width = 1024; //low res map for softer shadows
+        this.dirLight.shadow.mapSize.height = 1024; //i know it looks a bit pixely but i prefer the 'look and feel'
+        this.dirLight.shadow.camera.near = 0.5;
+        this.dirLight.shadow.camera.far = 500;
+        this.dirLight.shadow.camera.right = 20;
+        this.dirLight.shadow.camera.left = -20;
+        this.dirLight.shadow.camera.top = 20;
+        this.dirLight.shadow.camera.bottom = -20;
+        this.dirLight.shadow.bias = 0;
         //add light and helper
-        this.scene.add( dirLight );
-        const helper = new THREE.CameraHelper( dirLight.shadow.camera );
-        this.scene.add( helper );
+        this.scene.add( this.dirLight );
+        // const helper = new THREE.CameraHelper( this.dirLight.shadow.camera );
+        // this.scene.add( helper );
         //ambient light because everything was too dark
         const ambLight = new THREE.AmbientLight(0xffffff, 2 );
         this.scene.add(ambLight);
@@ -166,7 +177,7 @@ export class Level {
         this.addCollider(2,3,2, -17.2,-1.325,8.8, 0); //tree island right
         this.addCollider(10,5,3.5, 0.2,-2.4,16.25, 0); //final island floor 1
         this.addCollider(8,5,1.5, 0.2,-2.4,13.75, 0); //final island floor 2
-        this.addCollider(8,5,1.5, 0.2,-2.4,18.75, 0); //final island floor 3
+        this.addCollider(6.5,5,1.5, 0.7,-2.4,18.75, 0); //final island floor 3
         this.addCollider(2.5,5,1, 1.4,-2.4,20, 0); //final island floor 4
 
         //add trees for decoration
@@ -283,10 +294,51 @@ export class Level {
         this.player.camera.updateProjectionMatrix();
     }
 
+    retry() {
+        this.load(this.levelID); //incredibly lazy
+    }
+
     update(deltaTime) {
-        this.world.step(1/60, deltaTime);
+        this.world.step(1/60, deltaTime); //physics update synced to framerate
+
+        if (this.nuke.disarmed) {
+            this.turnOnElement('win');
+            this.turnOffElement('timer');
+            this.player.kill(true);
+        }
+
+        if (this.player.hasMoved && !this.nuke.disarmed) {
+            this.timer -= deltaTime;
+            document.getElementById('timerText').innerHTML = String(Math.ceil(this.timer));
+        }
+
+        if (this.timer <= -1) { //bomb will now detonate, uh oh
+            this.player.kill(false); //gives player 31 seconds, allowing for 0 to show for 1 second
+            this.nuke.detonate();
+            this.dirLight.intensity += deltaTime * 10;
+        }
+
         this.player.update(deltaTime);
+        if (this.player.dead && !this.nuke.disarmed) {
+            this.turnOnElement('died');
+            this.turnOffElement('timer');
+        }
+
         this.nuke.update();
+    }
+
+    turnOnElement(element) {
+        const style = getComputedStyle(document.getElementById(element));
+        if (style.display == 'none') {
+            document.getElementById(element).style.display = 'block';
+        }
+    }
+
+    turnOffElement(element) {
+        const style = getComputedStyle(document.getElementById(element));
+        if (style.display == 'block') {
+            document.getElementById(element).style.display = 'none';
+        }
     }
 
     render() {

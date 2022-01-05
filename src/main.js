@@ -71,8 +71,8 @@ function init() {
     dirLight.shadow.bias = 0;
     //add light and helper
     scene.add( dirLight );
-    const helper = new THREE.CameraHelper( dirLight.shadow.camera );
-    scene.add( helper );
+    // const helper = new THREE.CameraHelper( dirLight.shadow.camera );
+    // scene.add( helper );
 
     const ambLight = new THREE.AmbientLight(0xffffff, 0.5 );
     scene.add(ambLight);
@@ -89,6 +89,22 @@ function init() {
         console.log('loading level 2');
         document.getElementById('mainMenu').style.display = "none";
         level.load(1);
+    }
+    document.getElementById('howToPlayButton').onclick = function() {
+        console.log('showing how to play');
+        document.getElementById('mainMenu').style.display = "none";
+        document.getElementById('howTo').style.display = "block";
+    }
+    document.getElementById('backButton').onclick = function() {
+        console.log('going back to main menu');
+        document.getElementById('howTo').style.display = "none";
+        document.getElementById('mainMenu').style.display = "block";
+    }
+    document.getElementById('returnButton').onclick = function() {
+        console.log('going back to main menu after disarming nuke');
+        document.getElementById('win').style.display = "none";
+        document.getElementById('mainMenu').style.display = "block";
+        level.loaded = false;
     }
 }
 
@@ -117,6 +133,8 @@ function update() {
     }
     else {
         if (nuke == null && resources.loaded()) {
+            level.turnOffElement('loading');
+            level.turnOnElement('mainMenu');
             nuke = resources.nukeModel.clone();
             nuke.position.set(-0.2,0.7,-1.7);
             scene.add(nuke);

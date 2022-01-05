@@ -12,14 +12,53 @@
 <body>
     <canvas id="gl-canvas" width="1024" height="1024"></canvas>
 
+    <div id="loading">
+        <div class="loader"></div>
+    </div>
+
     <div id="mainMenu">
-        <h1 style="font-size: 120px; padding-left: 15%; font-family: Arial, Helvetica, sans-serif;">NukeRun</h1>
+        <h1 style="font-size: 120px; padding-left: 0%; font-family: Arial, Helvetica, sans-serif;">NukeRun</h1>
         <br/><br/>
         <button id="howToPlayButton" class="menuButton" type="button">How To Play</button>
         <br/><br/>
         <button id="level1Button" class="menuButton" type="button">Play Level 1</button>
         <br/><br/>
         <button id="level2Button" class="menuButton" type="button">Play Level 2</button>
+    </div>
+
+    <div id="howTo">
+        <h2 style="font-size: 60px; padding-left: 0%; font-family: Arial, Helvetica, sans-serif;">Controls:</h2>
+        <p class='howToParagraph'><strong>W, A, S and D</strong> - movement</p>
+        <p class='howToParagraph'><strong>Space Bar</strong> - jump</p>
+        <p class='howToParagraph'><strong>Mouse</strong> - looking</p>
+        <p class='howToParagraph'><strong>F</strong> - change perspective</p>
+        <h2 style="font-size: 60px; padding-left: 0%; font-family: Arial, Helvetica, sans-serif;">Objective:</h2>
+        <p class='howToParagraph'>
+            Oh no!!! You dropped your nuclear bomb. Don't worry, these things happen. But wait... it 
+            armed itself when you dropped it! And for some reason you dropped it on that island in the middle of 
+            the oasis in this lovely desert. You only have 30 seconds to disarm it!
+        </p>
+        <p class='howToParagraph'>
+            Thankfully there appears to be a path of logs and crates to help you get across and disarm it. To disarm it 
+            just <strong>push the nuke into the water</strong> (try running into it to push it). Sorry... what did you 
+            just say? You can't swim! Well don't fall in the water then, otherwise we are all doomed.
+        </p>
+        <br/>
+        <button id="backButton" class="menuButton" type="button">Return to Main Menu</button>
+    </div>
+
+    <div id="died">
+        <h2 style="font-size: 140px; color: red; font-family: Arial, Helvetica, sans-serif;">You Died!</h2>
+        <button id="retryButton" class="menuButton" type="button">Retry</button>
+    </div>
+
+    <div id="timer">
+        <h2 id="timerText" style="font-size: 140px; color: white; font-family: Arial, Helvetica, sans-serif;">00</h2>
+    </div>
+
+    <div id='win'>
+        <h2 style="font-size: 140px; color: #4CAF50; font-family: Arial, Helvetica, sans-serif;">Nuke Disarmed!</h2>
+        <button id="returnButton" class="menuButton" type="button">Return to Main Menu</button>
     </div>
 
 

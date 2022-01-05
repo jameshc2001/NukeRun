@@ -25,7 +25,7 @@ const _PI_2 = Math.PI / 2;
 
 class CameraControls extends EventDispatcher {
 
-	constructor( camera, initialPosition, target, targetOffset, domElement ) {
+	constructor( camera, thirdPersonOffset, firstPersonOffset, target, targetOffset, domElement ) {
 
 		super();
 
@@ -36,20 +36,29 @@ class CameraControls extends EventDispatcher {
 
 		}
 
+        this.enabled = true;
+
 		this.domElement = domElement;
 		this.isLocked = false;
 
         this.range = 200;
+
+        this.firstPerson = false; //start in third person mode
+        this.firstPersonOffset = firstPersonOffset
+        this.thirdPersonOffset = thirdPersonOffset;
+        this.target = target;
+        this.targetOffset = targetOffset;
+        this.camera = camera;
 
 		// Set to constrain the pitch of the camera
 		// Range is 0 to Math.PI radians
 		this.minPolarAngle = 0; // radians
 		this.maxPolarAngle = Math.PI; // radians
 
-        this.target = target;
-        this.targetOffset = targetOffset;
-
         //set initial properties
+        const initialPosition = new Vector3();
+        initialPosition.copy(this.thirdPersonOffset);
+        initialPosition.add(this.target.position);
         camera.position.copy(initialPosition);
         const initialLookAt = new Vector3(0,0,0);
         initialLookAt.add(this.target.position).add(this.targetOffset);
@@ -57,11 +66,57 @@ class CameraControls extends EventDispatcher {
 
 		const scope = this;
 
+        //this function is my own creation
+        this.changePerspective = function() {
+            if (this.firstPerson) { //switch to third person
+
+                //complicate, but mainly because of the way the third person camera works
+                //the third person camera orbits the target + the target offset, this
+                //needs to be taken into account when resetting its position to keep it
+                //facing the same direction as it was in first person.
+
+                //get direction of first person camera
+                const camDir = new Vector3(0,0,-1);
+                camDir.applyQuaternion(camera.quaternion);
+                //check for extreme inclines
+                if (camDir.y < -0.98 || camDir.y > 0.55) camDir.y = 0;
+                camDir.normalize();
+
+                //get distance camera orbits from with respect to orbit cente.
+                const temp = new Vector3();
+                temp.copy(this.thirdPersonOffset);
+                temp.sub(this.targetOffset);
+                const dist = temp.length();
+
+                //put camera at orbit centre, then move backwards in the opposite direction
+                //to where the first person camera was waiting, do this by the distance just calcluated
+                const thirdInitialPos = new Vector3();
+                thirdInitialPos.copy(this.target.position);
+                thirdInitialPos.add(this.targetOffset);
+                thirdInitialPos.add(camDir.multiplyScalar(-dist)); //scale by dist
+                camera.position.copy(thirdInitialPos);
+
+                //finally, get the camera to look at the orbit centre.
+                const thirdInitialLookAt = new Vector3();
+                thirdInitialLookAt.add(this.target.position).add(this.targetOffset);
+                camera.lookAt(thirdInitialLookAt);
+            }
+            else { //switch to first person
+                const firstInitialPos = new Vector3();
+                firstInitialPos.copy(this.firstPersonOffset);
+                firstInitialPos.add(this.target.position);
+                camera.position.copy(firstInitialPos);
+            }
+
+            this.firstPerson = !this.firstPerson;
+            console.log('perspective change');
+        }
+
         //this function contains the main edit, I want the camera to rotate
         //around the camera's target, not in place.
 		function onMouseMove( event ) {
 
-			if ( scope.isLocked === false ) return;
+			if ( scope.isLocked === false || !scope.enabled) return;
 
             //get input
 			const movementX = event.movementX || event.mozMovementX || event.webkitMovementX || 0;
@@ -71,21 +126,18 @@ class CameraControls extends EventDispatcher {
             if (movementX > scope.range || movementX < -scope.range) return;
             if (movementY > scope.range || movementY < -scope.range) return;
 
-            if (this.firstPerson) {
-                // _euler.setFromQuaternion( camera.quaternion );
+            if (scope.firstPerson) {
+                _euler.setFromQuaternion( camera.quaternion );
 
-                // _euler.y -= movementX * 0.002;
-                // _euler.x -= movementY * 0.002;
+                _euler.y -= movementX * 0.002;
+                _euler.x -= movementY * 0.002;
 
-                // _euler.x = Math.max( _PI_2 - scope.maxPolarAngle, Math.min( _PI_2 - scope.minPolarAngle, _euler.x ) );
+                _euler.x = Math.max( _PI_2 - scope.maxPolarAngle, Math.min( _PI_2 - scope.minPolarAngle, _euler.x ) );
 
-                // camera.quaternion.setFromEuler( _euler );
+                camera.quaternion.setFromEuler( _euler );
             }
             else { //third person
                 const polar = new Spherical(); //working in polar coordinates
-
-
-
 
                 //apply rotation
                 //console.log(scope.target);
@@ -94,6 +146,8 @@ class CameraControls extends EventDispatcher {
                 polar.phi -= movementY * 0.002;
                 polar.theta -= movementX * 0.002;
 
+                if (polar.phi < 0.1 || polar.phi > 2.2) polar.phi += movementY * 0.002; //limit movement
+                
                 //apply and add offset
                 camera.position.setFromSpherical(polar);
                 const targetWorldPos = new Vector3(0,0,0);
@@ -195,7 +249,7 @@ class CameraControls extends EventDispatcher {
 
 		this.lock = function () {
 
-			this.domElement.requestPointerLock();
+			if (this.enabled) this.domElement.requestPointerLock();
 
 		};
 
