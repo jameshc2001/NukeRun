@@ -104,7 +104,9 @@ function init() {
         console.log('going back to main menu after disarming nuke');
         document.getElementById('win').style.display = "none";
         document.getElementById('mainMenu').style.display = "block";
+        level.player.waterAmbientSound.stop();
         level.loaded = false;
+        onWindowResize();
     }
 }
 

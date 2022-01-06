@@ -8,6 +8,7 @@ export class Level {
 
     levelID;
     timer;
+    playExplosion;
 
     resources;
 
@@ -93,6 +94,7 @@ export class Level {
     }
 
     standardSetup() {
+        this.playExplosion = true;
         this.timer = 30;
         this.turnOnElement('timer');
         document.getElementById('timerText').innerHTML = String(this.timer);
@@ -295,6 +297,7 @@ export class Level {
     }
 
     retry() {
+        this.player.waterAmbientSound.stop();
         this.load(this.levelID); //incredibly lazy
     }
 
@@ -302,6 +305,10 @@ export class Level {
         this.world.step(1/60, deltaTime); //physics update synced to framerate
 
         if (this.nuke.disarmed) {
+            if (this.nuke.playSplash) {
+                this.nuke.playSplash = false;
+                this.player.waterSplashSound.play();
+            }
             this.turnOnElement('win');
             this.turnOffElement('timer');
             this.player.kill(true);
@@ -313,6 +320,10 @@ export class Level {
         }
 
         if (this.timer <= -1) { //bomb will now detonate, uh oh
+            if (this.playExplosion) {
+                this.playExplosion = false;
+                this.player.explosionSound.play();
+            }
             this.player.kill(false); //gives player 31 seconds, allowing for 0 to show for 1 second
             this.nuke.detonate();
             this.dirLight.intensity += deltaTime * 10;

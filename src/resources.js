@@ -33,10 +33,16 @@ export class Resources {
     waterNormal1;
     waterNormal2;
 
+    waterAmbient;
+    waterSplash;
+    explosion;
+    jump;
+    land;
+
     constructor() {
         var scope = this;
         this.totalLoaded = 0;
-        this.maxLoaded = 15;
+        this.maxLoaded = 20;
 
         //load player and their animations
         const fbxLoader = new FBXLoader();
@@ -273,6 +279,14 @@ export class Resources {
         const waterLoader = new THREE.TextureLoader();
         waterLoader.load('Resources/water/Water_1_M_Normal.jpg', (water1) => {scope.totalLoaded += 1; this.waterNormal1 = water1;});
         waterLoader.load('Resources/water/Water_2_M_Normal.jpg', (water2) => {scope.totalLoaded += 1; this.waterNormal2 = water2;});
+
+        //load audio
+        const audioLoader = new THREE.AudioLoader();
+        audioLoader.load('Resources/audio/waterAmbient.mp3', function(buffer) {scope.totalLoaded += 1; scope.waterAmbient = buffer;});
+        audioLoader.load('Resources/audio/waterSplash.mp3', function(buffer) {scope.totalLoaded += 1; scope.waterSplash = buffer;});
+        audioLoader.load('Resources/audio/explosion.mp3', function(buffer) {scope.totalLoaded += 1; scope.explosion = buffer;});
+        audioLoader.load('Resources/audio/jump.mp3', function(buffer) {scope.totalLoaded += 1; scope.jump = buffer;});
+        audioLoader.load('Resources/audio/land.mp3', function(buffer) {scope.totalLoaded += 1; scope.land = buffer;});
     }
 
     loaded() {

@@ -31,6 +31,13 @@ export class Player {
     sideways;
     modelForwards;
 
+    listener;
+    waterAmbientSound;
+    waterSplashSound;
+    jumpSound;
+    landSound;
+    explosionSound;
+
     dead;
     hasMoved;
 
@@ -61,7 +68,6 @@ export class Player {
         this.actions['backwards'] = this.mixer.clipAction(resources.playerAnimations['backwards']);
         this.model.position.copy(this.position);
         scene.add(this.model);
-        console.log(this.model);
 
         //set materials for each perspective
         this.thirdPersonMat = this.model.children[0].material;
@@ -72,7 +78,6 @@ export class Player {
             depthTest: false,
             opacity: 0
         });
-        console.log(this.thirdPersonMat);
         
         //create camera
         const fov = 75;
@@ -84,6 +89,32 @@ export class Player {
         const firstPersonOffset = new THREE.Vector3(0, 1.6, 0);
         const targetOffset = new THREE.Vector3(0,1.4,0);
         this.controls = new CameraControls(this.camera, thirdPersonOffset, firstPersonOffset, this.model, targetOffset, document.body);
+
+        //setup sounds
+        this.listener = new THREE.AudioListener();
+        this.camera.add(this.listener);
+
+        this.waterAmbientSound = new THREE.Audio(this.listener);
+        this.waterAmbientSound.setBuffer(resources.waterAmbient);
+        this.waterAmbientSound.setLoop(true);
+        this.waterAmbientSound.setVolume(0.5);
+        this.waterAmbientSound.play();
+
+        this.waterSplashSound = new THREE.Audio(this.listener);
+        this.waterSplashSound.setBuffer(resources.waterSplash);
+
+        this.jumpSound = new THREE.Audio(this.listener);
+        this.jumpSound.setBuffer(resources.jump);
+        this.jumpSound.offset = 0.06;
+
+        this.landSound = new THREE.Audio(this.listener);
+        this.landSound.setBuffer(resources.land);
+        this.landSound.setVolume(0.5);
+
+        this.explosionSound = new THREE.Audio(this.listener);
+        this.explosionSound.setBuffer(resources.explosion);
+
+        //physics
         setupPhysics(this);
 
         function setupPhysics(scope) {
@@ -116,6 +147,7 @@ export class Player {
     }
 
     kill(controls) { //if controls false then also take out the collider
+        this.landSound.setVolume(0.0);
         this.dead = true;
         this.controls.enabled = false;
         this.controls.unlock();
@@ -125,9 +157,11 @@ export class Player {
 
     update(deltaTime) {
         const prevAction = this.currentAction;
+        const prevCanJump = this.canJump;
 
         //check for death by drowning
         if (!this.dead && this.body.position.y < -1) {
+            this.waterSplashSound.play();
             this.kill();
         }
 
@@ -231,6 +265,7 @@ export class Player {
 
             if(this.input.spaceKey && this.canJump) {
                 this.body.velocity.y = this.jumpForce;
+                if(!this.jumpSound.isPlaying) this.jumpSound.play();
             }
         }
         else { //player is dead
@@ -272,6 +307,8 @@ export class Player {
         const ray = new CANNON.Ray(from, to);
         this.canJump = ray.intersectWorld(this.world, {collisionFilterGroup: 2, collisionFilterMask: 1});
         if (!this.canJump) this.currentAction = 'fall';
+
+        if (!prevCanJump && this.canJump && !this.landSound.isPlaying) this.landSound.play();
 
         //update animations
         if (prevAction != this.currentAction) this.updateAnimations(this.currentAction);

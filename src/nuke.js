@@ -6,10 +6,12 @@ export class Nuke {
     helper;
     disarmed;
     canDisarm;
+    playSplash;
 
     constructor(position, scene, world, resources, physicsMaterial, rotation) {
         this.disarmed = false;
         this.canDisarm = true;
+        this.playSplash = true;
 
         this.model = resources.nukeModel.clone();
         this.model.position.copy(position);
