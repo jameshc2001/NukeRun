@@ -1,8 +1,8 @@
-import * as THREE from '../Common/build/three.module.js';
-import {Player} from '../src/player.js';
+import * as THREE from '../Extra Libraries/three.module.js';
+import {Player} from './player.js';
 import { Nuke } from './nuke.js';
 //import * as CANNON from '../Common/build/cannon.js';
-import {Water} from '../Common/examples/jsm/objects/Water2.js';
+import {Water} from '../Extra Libraries/Water2.js';
 
 export class Level {
 

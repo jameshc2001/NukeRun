@@ -1,5 +1,4 @@
-import * as THREE from '../Common/build/three.module.js';
-import { OrbitControls } from '../Common/examples/jsm/controls/OrbitControls.js';
+import * as THREE from "../Extra Libraries/three.module.js";
 import { Level } from './level.js';
 import { Resources } from './resources.js';
 
@@ -39,8 +38,6 @@ function init() {
     camera.position.x = 1.4;
     camera.position.y = 1.2;
     camera.lookAt(0,0,0);
-
-    controls = new OrbitControls(camera, renderer.domElement);
 
     // world
     scene = new THREE.Scene();

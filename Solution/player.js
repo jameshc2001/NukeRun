@@ -1,7 +1,6 @@
-import * as THREE from '../Common/build/three.module.js';
-import {FBXLoader} from '../Common/examples/jsm/loaders/FBXLoader.js';
+import * as THREE from '../Extra Libraries/three.module.js';
 import { CameraControls } from './cameraControls.js';
-import * as SkeletonUtils from '../Common/examples/jsm/utils/SkeletonUtils.js';
+import * as SkeletonUtils from '../Extra Libraries/SkeletonUtils.js';
 
 export class Player {
     loaded = false;
@@ -105,7 +104,7 @@ export class Player {
 
         this.jumpSound = new THREE.Audio(this.listener);
         this.jumpSound.setBuffer(resources.jump);
-        this.jumpSound.offset = 0.06;
+        //this.jumpSound.offset = 0.06;
 
         this.landSound = new THREE.Audio(this.listener);
         this.landSound.setBuffer(resources.land);

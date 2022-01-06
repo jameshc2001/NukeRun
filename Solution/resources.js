@@ -1,8 +1,8 @@
-import * as THREE from '../Common/build/three.module.js';
-import {FBXLoader} from '../Common/examples/jsm/loaders/FBXLoader.js';
-import { TGALoader } from '../Common/examples/jsm/loaders/TGALoader.js';
-import {OBJLoader} from '../Common/examples/jsm/loaders/OBJLoader.js';
-import {GLTFLoader} from '../Common/examples/jsm/loaders/GLTFLoader.js';
+import * as THREE from '../Extra Libraries/three.module.js';
+import {FBXLoader} from '../Extra Libraries/FBXLoader.js';
+import { TGALoader } from '../Extra Libraries/TGALoader.js';
+import {OBJLoader} from '../Extra Libraries/OBJLoader.js';
+import {GLTFLoader} from '../Extra Libraries/GLTFLoader.js';
 
 //this class holds all the important resources
 //loading is done upon construction
@@ -46,7 +46,7 @@ export class Resources {
 
         //load player and their animations
         const fbxLoader = new FBXLoader();
-        fbxLoader.setPath('Resources/alex/');
+        fbxLoader.setPath('../Assets/alex/');
         fbxLoader.load(
             'Alex.fbx',
             (alex) => {
@@ -59,7 +59,7 @@ export class Resources {
 
                 //get the animations
                 const animation = new FBXLoader();
-                animation.setPath('Resources/alex/');
+                animation.setPath('../Assets/alex/');
                 animation.load('Idle.fbx', (idle) => {
                     scope.totalLoaded += 1;
                     this.playerAnimations['idle'] = idle.animations[0];
@@ -92,12 +92,12 @@ export class Resources {
 
         //load the trees and their textures and env maps!
         const diffuseLoader = new TGALoader();
-        diffuseLoader.load('Resources/trees/Palm trees diffuse.tga', function(diffuse) {
+        diffuseLoader.load('../Assets/trees/Palm trees diffuse.tga', function(diffuse) {
             diffuse.wrapS = THREE.RepeatWrapping;
             diffuse.wrapT = THREE.RepeatWrapping;
             diffuse.repeat.set(1,1);
             const normalLoader = new TGALoader();
-            normalLoader.load('Resources/trees/Palm trees normal.tga', function(normal) {
+            normalLoader.load('../Assets/trees/Palm trees normal.tga', function(normal) {
                 normal.wrapS = THREE.RepeatWrapping;
                 normal.wrapT = THREE.RepeatWrapping;
                 normal.repeat.set(1,1);
@@ -112,7 +112,7 @@ export class Resources {
                 });
 
                 const treeLoader = new FBXLoader();
-                treeLoader.setPath('Resources/trees/');
+                treeLoader.setPath('../Assets/trees/');
                 treeLoader.load('PalmTreeSingleStraight.FBX', (single) => {
                     scope.totalLoaded += 1;
                     single.children.splice(0, 1); //remove one sided leafs
@@ -124,7 +124,7 @@ export class Resources {
                     scope.singleModel = single;
                 });
 
-                treeLoader.setPath('Resources/trees/');
+                treeLoader.setPath('../Assets/trees/');
                 treeLoader.load('PalmTreeDualStraight.FBX', (dual) => {
                     scope.totalLoaded += 1;
                     dual.children.splice(1, 1); //remove one sided leafs
@@ -136,7 +136,7 @@ export class Resources {
                     scope.dualModel = dual;
                 });
 
-                treeLoader.setPath('Resources/trees/');
+                treeLoader.setPath('../Assets/trees/');
                 treeLoader.load('PalmTreeTrio.FBX', (trio) => {
                     scope.totalLoaded += 1;
                     trio.children.splice(1, 1); //remove one sided leafs
@@ -152,11 +152,11 @@ export class Resources {
         
         //load box textures and create the box object
         const crateTextureLoader = new THREE.TextureLoader();
-        crateTextureLoader.load('Resources/crate/Wood_Crate_001_basecolor.jpg', (texture) => {
+        crateTextureLoader.load('../Assets/crate/Wood_Crate_001_basecolor.jpg', (texture) => {
             const crateNormalLoader = new THREE.TextureLoader();
-            crateNormalLoader.load('Resources/crate/Wood_Crate_001_normal.jpg', (normal) => {
+            crateNormalLoader.load('../Assets/crate/Wood_Crate_001_normal.jpg', (normal) => {
                 const crateAOLoader = new THREE.TextureLoader();
-                crateAOLoader.load('Resources/crate/Wood_Crate_001_ambientOcclusion.jpg', (ao) => {
+                crateAOLoader.load('../Assets/crate/Wood_Crate_001_ambientOcclusion.jpg', (ao) => {
                     scope.totalLoaded += 1;
                     const crateMaterial = new THREE.MeshPhongMaterial({
                         shininess: 0.1,
@@ -178,11 +178,11 @@ export class Resources {
 
         //load log
         const logTextureLoader = new THREE.TextureLoader();
-        logTextureLoader.load('Resources/log/log_diffuse.png', (texture) => {
+        logTextureLoader.load('../Assets/log/log_diffuse.png', (texture) => {
             const logNormalLoader = new THREE.TextureLoader();
-            logNormalLoader.load('Resources/log/log_normal.png', (normal) => {
+            logNormalLoader.load('../Assets/log/log_normal.png', (normal) => {
                 const logDispLoader = new THREE.TextureLoader();
-                logDispLoader.load('Resources/log/log_disp.png', (disp) => {
+                logDispLoader.load('../Assets/log/log_disp.png', (disp) => {
                     const logMaterial = new THREE.MeshPhongMaterial({
                         shininess: 0,
                         color: 0x525252,
@@ -192,7 +192,7 @@ export class Resources {
                         displacementMap: disp
                     });
                     const logLoader = new OBJLoader();
-                    logLoader.setPath('Resources/log/')
+                    logLoader.setPath('../Assets/log/')
                     logLoader.load('low_poly_log.obj', (log) => {
                         scope.totalLoaded += 1;
                         log.traverse(child => {
@@ -209,12 +209,12 @@ export class Resources {
 
         //load skybox and nuke
         const skyLoader = new THREE.CubeTextureLoader();
-        skyLoader.setPath( 'Resources/skybox/' );
+        skyLoader.setPath( '../Assets/skybox/' );
         skyLoader.load(['1.bmp', '2.bmp', '3.bmp', '4.bmp', '5.bmp', '6.bmp'], (theSkybox) => {
             this.skybox = theSkybox;
 
             const nukeLoader = new GLTFLoader();
-            nukeLoader.load('Resources/nuke/nuke.gltf', (nuke) => {
+            nukeLoader.load('../Assets/nuke/nuke.gltf', (nuke) => {
                 scope.totalLoaded += 1;
                 nuke.scene.scale.setScalar(0.5);
                 nuke.scene.traverse(child => {
@@ -235,27 +235,27 @@ export class Resources {
 
         //load terrain
         const terrainTextureLoader = new THREE.TextureLoader();
-        terrainTextureLoader.load('Resources/terrain/Sand_007_basecolor.jpg', (texture) => {
+        terrainTextureLoader.load('../Assets/terrain/Sand_007_basecolor.jpg', (texture) => {
             texture.wrapS = THREE.RepeatWrapping;
             texture.wrapT = THREE.RepeatWrapping;
             texture.repeat.set(16,16);
             const terrainNormalLoader = new THREE.TextureLoader();
-            terrainNormalLoader.load('Resources/terrain/Sand_007_normal.jpg', (normal) => {
+            terrainNormalLoader.load('../Assets/terrain/Sand_007_normal.jpg', (normal) => {
                 normal.wrapS = THREE.RepeatWrapping;
                 normal.wrapT = THREE.RepeatWrapping;
                 normal.repeat.set(16,16);
                 const terrainaoLoader = new THREE.TextureLoader();
-                terrainaoLoader.load('Resources/terrain/Sand_007_ambientOcclusion.jpg', (ao) => {
+                terrainaoLoader.load('../Assets/terrain/Sand_007_ambientOcclusion.jpg', (ao) => {
                     ao.wrapS = THREE.RepeatWrapping;
                     ao.wrapT = THREE.RepeatWrapping;
                     ao.repeat.set(16,16);
                     const terrainHeightLoader = new THREE.TextureLoader();
-                    terrainHeightLoader.load('Resources/terrain/Sand_007_height.png', (height) => {
+                    terrainHeightLoader.load('../Assets/terrain/Sand_007_height.png', (height) => {
                         height.wrapS = THREE.RepeatWrapping;
                         height.wrapT = THREE.RepeatWrapping;
                         height.repeat.set(16,16);
                         const terrainLoader = new GLTFLoader();
-                        terrainLoader.load('Resources/terrain/terrain.gltf', (terrain) => {
+                        terrainLoader.load('../Assets/terrain/terrain.gltf', (terrain) => {
                             scope.totalLoaded += 1;
                             terrain.scene.traverse(child => {
                                 if (child.isMesh) {
@@ -277,16 +277,16 @@ export class Resources {
 
         //load water normals
         const waterLoader = new THREE.TextureLoader();
-        waterLoader.load('Resources/water/Water_1_M_Normal.jpg', (water1) => {scope.totalLoaded += 1; this.waterNormal1 = water1;});
-        waterLoader.load('Resources/water/Water_2_M_Normal.jpg', (water2) => {scope.totalLoaded += 1; this.waterNormal2 = water2;});
+        waterLoader.load('../Assets/water/Water_1_M_Normal.jpg', (water1) => {scope.totalLoaded += 1; this.waterNormal1 = water1;});
+        waterLoader.load('../Assets/water/Water_2_M_Normal.jpg', (water2) => {scope.totalLoaded += 1; this.waterNormal2 = water2;});
 
         //load audio
         const audioLoader = new THREE.AudioLoader();
-        audioLoader.load('Resources/audio/waterAmbient.mp3', function(buffer) {scope.totalLoaded += 1; scope.waterAmbient = buffer;});
-        audioLoader.load('Resources/audio/waterSplash.mp3', function(buffer) {scope.totalLoaded += 1; scope.waterSplash = buffer;});
-        audioLoader.load('Resources/audio/explosion.mp3', function(buffer) {scope.totalLoaded += 1; scope.explosion = buffer;});
-        audioLoader.load('Resources/audio/jump.mp3', function(buffer) {scope.totalLoaded += 1; scope.jump = buffer;});
-        audioLoader.load('Resources/audio/land.mp3', function(buffer) {scope.totalLoaded += 1; scope.land = buffer;});
+        audioLoader.load('../Assets/audio/waterAmbient.mp3', function(buffer) {scope.totalLoaded += 1; scope.waterAmbient = buffer;});
+        audioLoader.load('../Assets/audio/waterSplash.mp3', function(buffer) {scope.totalLoaded += 1; scope.waterSplash = buffer;});
+        audioLoader.load('../Assets/audio/explosion.mp3', function(buffer) {scope.totalLoaded += 1; scope.explosion = buffer;});
+        audioLoader.load('../Assets/audio/jump.mp3', function(buffer) {scope.totalLoaded += 1; scope.jump = buffer;});
+        audioLoader.load('../Assets/audio/land.mp3', function(buffer) {scope.totalLoaded += 1; scope.land = buffer;});
     }
 
     loaded() {

@@ -1,0 +1,107 @@
+body {
+margin: 0;
+    overflow: hidden;
+}
+
+#timer {
+    position: absolute;
+	top: -10%;
+    left: 3%;
+	width: 100%;
+    height: 100%;
+	text-align: left;
+	z-index: 100;
+	display:none;
+}
+
+#win {
+    position: absolute;
+	top: 10%;
+    /* left:%; */
+	width: 100%;
+    height: 100%;
+	text-align: center;
+	z-index: 100;
+	display:none;
+}
+
+#died {
+    position: absolute;
+	top: 10%;
+    /* left:%; */
+	width: 100%;
+    height: 100%;
+	text-align: center;
+	z-index: 100;
+	display:none;
+}
+
+#howTo {
+    position: absolute;
+	top: 10%;
+    left: 5%;
+	width: 50%;
+    height: 100%;
+	text-align: left;
+	z-index: 100;
+	display:none;
+}
+
+#mainMenu {
+    position: absolute;
+	top: 10%;
+    left: 5%;
+	width: 100%;
+    height: 100%;
+	text-align: left;
+	z-index: 100;
+	display:none;
+}
+
+.howToParagraph {
+    color: white;
+    font-size: 18px;
+}
+
+.menuButton {
+    background-color: #4CAF50;
+    color: white; 
+    border: 2px solid #4CAF50;
+    font-size: 16px;
+    margin: 4px 2px;
+    cursor: pointer;
+    padding: 20px 80px;
+    transition-duration: 0.4s;
+    border-radius: 8px;
+}
+
+.menuButton:hover {
+    background-color: white;
+    color: black;
+}
+
+#loading {
+    position: absolute;
+	top: 45%;
+    left: 45%;
+	width: 100%;
+    height: 100%;
+	text-align: center;
+	z-index: 100;
+	display:block;
+}
+
+/* taken from w3schools how to css loader */
+.loader {
+    border: 16px solid #f3f3f3; /* Light grey */
+    border-top: 16px solid #3498db; /* Blue */
+    border-radius: 50%;
+    width: 120px;
+    height: 120px;
+    animation: spin 2s linear infinite;
+}
+  
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}

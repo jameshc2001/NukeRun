@@ -1,4 +1,4 @@
-import * as THREE from '../Common/build/three.module.js';
+import * as THREE from '../Extra Libraries/three.module.js';
 
 export class Nuke {
     model;

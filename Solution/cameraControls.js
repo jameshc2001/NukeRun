@@ -12,7 +12,7 @@ import {
 	EventDispatcher,
 	Vector3,
     Spherical
-} from '../Common/build/three.module.js';
+} from '../Extra Libraries/three.module.js';
 
 const _euler = new Euler( 0, 0, 0, 'YXZ' );
 const _vector = new Vector3();
