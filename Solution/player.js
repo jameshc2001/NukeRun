@@ -1,3 +1,5 @@
+//this handles the player and input
+
 import * as THREE from '../Extra Libraries/three.module.js';
 import { CameraControls } from './cameraControls.js';
 import * as SkeletonUtils from '../Extra Libraries/SkeletonUtils.js';
@@ -5,32 +7,31 @@ import * as SkeletonUtils from '../Extra Libraries/SkeletonUtils.js';
 export class Player {
     loaded = false;
 
-    position;
-    model;
-    mixer;
-    input;
-    actions = {};
-    currentAction;
-    speed;
+    model; //game object
+    mixer; //animation mixer
+    input; //a class that keeps track of pressed keys
+    actions = {}; //animations
+    currentAction; //current animation
 
-    firstPersonMat;
-    thirdPersonMat;
+    firstPersonMat; //material for model in first person mode (invisible)
+    thirdPersonMat; //usual material, for third person mode
 
     world; //physics world
     body; //rigid body
-    bodyHelper;
-    velocity;
-    canJump;
-    jumpForce;
+    bodyHelper; //for showing wireframe of player collider for dev purposes
+    velocity; //calculated from input
+    canJump; //true if player on ground
+    jumpForce; //how much force to jump with
+    speed; //determines player's speed
 
     camera
-    controls;
-    direction;
-    up;
-    sideways;
-    modelForwards;
+    controls; //class that handles movement of camera from mouse input
+    direction; //forwards direction, depends on camera
+    up; //always (0, 1, 0)
+    sideways; //cross product of direction and up
+    modelForwards; //the starting forwards direction of model, rotations happen with respect to this
 
-    listener;
+    listener; //where audio is picked up from, attached to camera
     waterAmbientSound;
     waterSplashSound;
     jumpSound;
@@ -38,12 +39,11 @@ export class Player {
     explosionSound;
 
     dead;
-    hasMoved;
+    hasMoved; //used by level for starting nuke timer
 
     constructor(position, scene, world, resources) {
         this.dead = false;
         this.hasMoved = false;
-        this.position = position;
         this.input = new PlayerInput();
         this.world = world;
         this.up = new THREE.Vector3(0,1,0);
@@ -65,7 +65,7 @@ export class Player {
         this.actions['left'] = this.mixer.clipAction(resources.playerAnimations['left']);
         this.actions['right'] = this.mixer.clipAction(resources.playerAnimations['right']);
         this.actions['backwards'] = this.mixer.clipAction(resources.playerAnimations['backwards']);
-        this.model.position.copy(this.position);
+        this.model.position.copy(position);
         scene.add(this.model);
 
         //set materials for each perspective
@@ -78,7 +78,7 @@ export class Player {
             opacity: 0
         });
         
-        //create camera
+        //create camera and controls
         const fov = 75;
         const aspect = window.innerWidth / window.innerHeight;
         const near = 0.1;
@@ -104,7 +104,6 @@ export class Player {
 
         this.jumpSound = new THREE.Audio(this.listener);
         this.jumpSound.setBuffer(resources.jump);
-        //this.jumpSound.offset = 0.06;
 
         this.landSound = new THREE.Audio(this.listener);
         this.landSound.setBuffer(resources.land);
@@ -121,6 +120,7 @@ export class Player {
             pos.copy(position);
             pos.y += 0.8;
 
+            //uncomment for dev
             // const geometry = new THREE.BoxGeometry( 0.25, 1.6, 0.25 );
             // const wireframe = new THREE.WireframeGeometry(geometry);
             // scope.bodyHelper = new THREE.LineSegments(wireframe);
@@ -145,13 +145,16 @@ export class Player {
         this.loaded = true;
     }
 
-    kill(controls) { //if controls false then also take out the collider
-        this.landSound.setVolume(0.0);
+    //controls is true if we are only stopping the players controls
+    kill(controls) { //if controls false then also take out the collider and stop landing sound
         this.dead = true;
         this.controls.enabled = false;
-        this.controls.unlock();
+        this.controls.unlock(); //give back mouse
         if(this.canJump) this.updateAnimations('idle');
-        if (!controls) this.body.collisionFilterGroup = 8; //disable collisions so player falls
+        if (!controls) {
+            this.landSound.setVolume(0.0);
+            this.body.collisionFilterGroup = 8; //disable collisions so player falls
+        }
     }
 
     update(deltaTime) {
@@ -164,12 +167,13 @@ export class Player {
             this.kill();
         }
 
+        //if helper was created (for dev purposes), update it's position
         if (this.bodyHelper != null) {
             this.bodyHelper.position.copy(this.body.position);
             this.bodyHelper.quaternion.copy(this.body.quaternion);
         }
 
-        //update direction
+        //update direction and sideways vectors
         if (this.controls.firstPerson) {
             this.direction = new THREE.Vector3(0,0,-1);
             this.direction.applyQuaternion(this.camera.quaternion);
@@ -182,72 +186,69 @@ export class Player {
         this.direction.normalize();
         this.sideways.crossVectors(this.direction, this.up);
 
-        // //rotate model
+        //rotate model if in first person or any keyboard input detected (allows camera to orbit model when no keyboard input)
         if (!this.dead) {
             if (this.controls.firstPerson || this.input.wKey || this.input.sKey || this.input.aKey || this.input.dKey) {
                 var angle = this.modelForwards.angleTo(this.direction);
-                if (this.direction.x < 0) angle *= -1;
+                if (this.direction.x < 0) angle *= -1; //change direction of rotation if necessary
                 this.model.rotation.y = angle;
-
-                //for dev
-                //console.log(this.body.position);
             }
         }
 
+        //if player requests it, give back mouse control
+        if (this.input.escKey) this.controls.unlock();
 
-        if (this.input.escKey) this.controls.unlock(); //unlock and lock too quickly gives error
-
+        //main input logic for movement, self explanatory
         if (!this.dead) {
-            if (this.input.fKey) {
+            if (this.input.fKey) { //switch perspectives
                 if (this.controls.firstPerson) this.model.children[0].material = this.thirdPersonMat;
                 else this.model.children[0].material = this.firstPersonMat;
                 this.controls.changePerspective();
-                this.input.fKey = false;
+                this.input.fKey = false; //prevents switching back and forth quickly from holding down key too long
             }
 
-            if (this.input.wKey) {
+            if (this.input.wKey) { //forwards
                 this.currentAction = 'run';
                 this.velocity.copy(this.direction);
                 this.velocity.multiplyScalar(this.speed);
             }
-            if (this.input.sKey) {
+            if (this.input.sKey) { //backwards
                 this.currentAction = 'backwards';
                 this.velocity.copy(this.direction);
                 this.velocity.multiplyScalar(-this.speed);
             }
 
-            if (this.input.aKey) {
+            if (this.input.aKey) { //left
                 this.currentAction = 'left';
                 this.velocity.copy(this.sideways);
                 this.velocity.multiplyScalar(-this.speed);
             }
-            if (this.input.dKey)  {
+            if (this.input.dKey)  { //right
                 this.currentAction = 'right';
                 this.velocity.copy(this.sideways);
                 this.velocity.multiplyScalar(this.speed);
             }
 
-            if (this.input.wKey && this.input.aKey) {
+            if (this.input.wKey && this.input.aKey) { //forwards left
                 this.currentAction = 'leftrun';
                 this.velocity.copy(this.sideways);
                 this.velocity.multiplyScalar(-1);
                 this.velocity.add(this.direction);
                 this.velocity.multiplyScalar(this.speed/Math.SQRT2);
             }
-            if (this.input.wKey && this.input.dKey) {
+            if (this.input.wKey && this.input.dKey) { //forwards right
                 this.currentAction = 'rightrun';
                 this.velocity.copy(this.sideways);
-                //this.velocity.multiplyScalar(-1);
                 this.velocity.add(this.direction);
                 this.velocity.multiplyScalar(this.speed/Math.SQRT2);
             }
-            if (this.input.sKey && this.input.aKey) {
+            if (this.input.sKey && this.input.aKey) { //backwards left
                 this.currentAction = 'leftbackwards';
                 this.velocity.copy(this.sideways);
                 this.velocity.add(this.direction);
                 this.velocity.multiplyScalar(-this.speed/Math.SQRT2);
             }
-            if (this.input.sKey && this.input.dKey) {
+            if (this.input.sKey && this.input.dKey) { //backwards right
                 this.currentAction = 'rightbackwards';
                 this.velocity.copy(this.direction);
                 this.velocity.multiplyScalar(-1);
@@ -255,6 +256,7 @@ export class Player {
                 this.velocity.multiplyScalar(this.speed/Math.SQRT2);
             }
 
+            //for snapping controls, stop all x, z movement when no input
             if (!this.input.wKey && !this.input.sKey && !this.input.aKey && !this.input.dKey) {
                 this.velocity.set(0,0,0); //need to change this for adding jumping
                 this.velocity.x = 0;
@@ -262,7 +264,7 @@ export class Player {
                 if (this.canJump) this.currentAction = 'idle';
             }
 
-            if(this.input.spaceKey && this.canJump) {
+            if(this.input.spaceKey && this.canJump) { //jump
                 this.body.velocity.y = this.jumpForce;
                 if(!this.jumpSound.isPlaying) this.jumpSound.play();
             }
@@ -278,25 +280,28 @@ export class Player {
             }
         }
 
+        //updated physics body based on inputted velocity
         this.body.velocity.x = this.velocity.x;
         this.body.velocity.z = this.velocity.z;
 
+        //save previous position for later calculations
         const prevPos = new THREE.Vector3();
         prevPos.copy(this.model.position);
 
+        //calculate new position from body and move model to it
         const newPos = new THREE.Vector3(0,0,0);
         newPos.copy(this.body.position);
         newPos.sub(new THREE.Vector3(0,0.8,0));
         this.model.position.copy(newPos);
 
-        if (!this.dead) {
+        if (!this.dead) { //move camera if player still alive
             const diff = new THREE.Vector3()
             diff.copy(newPos);
             diff.sub(prevPos);
             this.camera.position.add(diff); //update camera position
         }
 
-        //check if we are on the ground
+        //check if we are on the ground using ray casting
         var from = new CANNON.Vec3();
         var to = new CANNON.Vec3();
         from.copy(this.body.position);
@@ -307,6 +312,7 @@ export class Player {
         this.canJump = ray.intersectWorld(this.world, {collisionFilterGroup: 2, collisionFilterMask: 1});
         if (!this.canJump) this.currentAction = 'fall';
 
+        //play landing sound if we just landed
         if (!prevCanJump && this.canJump && !this.landSound.isPlaying) this.landSound.play();
 
         //update animations
@@ -314,6 +320,7 @@ export class Player {
         this.mixer.update(deltaTime);
     }
 
+    //plays requested animation, the diagonal movement ones require blending 2 animations
     updateAnimations(a) {
         this.mixer.stopAllAction();
         if (a == 'run' || a == 'left' || a == 'backwards' || a == 'right' || a == 'idle' || a == 'fall') this.actions[a].play();
@@ -338,6 +345,7 @@ export class Player {
     }
 }
 
+//class for holding basic input information, very simple code
 class PlayerInput {
     constructor() {
         this.wKey = false;
@@ -355,9 +363,6 @@ class PlayerInput {
 
         document.addEventListener('keydown', (e) => this.onKeyDown(e));
         document.addEventListener('keyup', (e) => this.onKeyUp(e));
-
-        // document.addEventListener('mousemove', (e) => this.onMouseMove(e));
-        // window.addEventListener( 'resize', this.onWindowResize);
     }
 
     onKeyDown(e) {

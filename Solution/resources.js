@@ -7,7 +7,7 @@ import {GLTFLoader} from '../Extra Libraries/GLTFLoader.js';
 //this class holds all the important resources
 //loading is done upon construction
 //after loaded is true, no more loaders will be needed
-//the rest of the run time
+//for the rest of the run time
 
 export class Resources {
     totalLoaded;

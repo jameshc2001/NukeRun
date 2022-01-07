@@ -1,9 +1,11 @@
+//this is the main entry point for the program
+
 import * as THREE from "../Extra Libraries/three.module.js";
 import { Level } from './level.js';
 import { Resources } from './resources.js';
 
-let scene, renderer, canvas, camera, controls
-let plane1, plane2, cube, nuke
+let scene, renderer, canvas, camera;
+let plane1, plane2, nuke;
 
 let level;
 let resources;
@@ -13,6 +15,8 @@ let deltaTime;
 //load models and set up test scene
 function init() {
     canvas = document.getElementById( "gl-canvas" );
+
+    //set up timing for consistent gameplay across different hardware
     clock = new THREE.Clock();
     deltaTime = 0;
 
@@ -22,11 +26,12 @@ function init() {
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.setPixelRatio( window.devicePixelRatio );
     renderer.setSize( window.innerWidth, window.innerHeight );
-    // renderer.outputEncoding = THREE.sRGBEncoding;
 
-    //set up level and load resources
+    //load resources and setup level
     resources = new Resources();
     level = new Level(renderer, resources);
+
+    //now prepare the main menu scene
 
     //camera
     const fov = 75;
@@ -39,7 +44,7 @@ function init() {
     camera.position.y = 1.2;
     camera.lookAt(0,0,0);
 
-    // world
+    //scene
     scene = new THREE.Scene();
     scene.background = new THREE.Color( 0xcccccc );
 
@@ -66,17 +71,19 @@ function init() {
     dirLight.shadow.camera.near = 0.5; // default
     dirLight.shadow.camera.far = 500; // default
     dirLight.shadow.bias = 0;
-    //add light and helper
+    //add light
     scene.add( dirLight );
-    // const helper = new THREE.CameraHelper( dirLight.shadow.camera );
+    // const helper = new THREE.CameraHelper( dirLight.shadow.camera ); //uncomment for dev
     // scene.add( helper );
 
+    //ambient light to make everything more visible
     const ambLight = new THREE.AmbientLight(0xffffff, 0.5 );
     scene.add(ambLight);
 
+    //handle resizes
     window.addEventListener( 'resize', onWindowResize );
 
-    //set up buttons
+    //set up buttons for html menus
     document.getElementById('level1Button').onclick = function() {
         console.log('loading level 1');
         document.getElementById('mainMenu').style.display = "none";
@@ -122,6 +129,7 @@ function onWindowResize() {
     renderer.setSize( window.innerWidth, window.innerHeight );
 }
 
+//this function is called every frame
 function update() {
     requestAnimationFrame( update );
     deltaTime = clock.getDelta();
@@ -131,14 +139,14 @@ function update() {
         level.render();
     }
     else {
-        if (nuke == null && resources.loaded()) {
+        if (nuke == null && resources.loaded()) { //all resources have been loaded
             level.turnOffElement('loading');
             level.turnOnElement('mainMenu');
             nuke = resources.nukeModel.clone();
             nuke.position.set(-0.2,0.7,-1.7);
             scene.add(nuke);
         }
-        if (nuke != null) {
+        if (nuke != null) { //rotate the nuke to make it look cool
             nuke.rotation.y += deltaTime;
             nuke.position.y = 0.7 + Math.cos(clock.getElapsedTime()) * 0.25;
         }

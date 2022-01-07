@@ -1,9 +1,11 @@
+//this handles the nuke
+
 import * as THREE from '../Extra Libraries/three.module.js';
 
 export class Nuke {
-    model;
-    body;
-    helper;
+    model; //game object
+    body; //physics body
+    helper; //for dev
     disarmed;
     canDisarm;
     playSplash;
@@ -11,7 +13,7 @@ export class Nuke {
     constructor(position, scene, world, resources, physicsMaterial, rotation) {
         this.disarmed = false;
         this.canDisarm = true;
-        this.playSplash = true;
+        this.playSplash = true; //flag used to play splash sound once
 
         this.model = resources.nukeModel.clone();
         this.model.position.copy(position);
@@ -22,6 +24,7 @@ export class Nuke {
         const y = 1;
         const z = 1;
 
+        //crate physics body
         const shape = new CANNON.Box(new CANNON.Vec3(x/2, y/2, z/2));
         this.body = new CANNON.Body({mass:2,material:physicsMaterial, collisionFilterGroup: 1,collisionFilterMask: 1 | 2 | 4});
         this.body.addShape(shape, new CANNON.Vec3(0.25,0,0)); //small offset
@@ -29,6 +32,7 @@ export class Nuke {
         this.body.quaternion.setFromEuler(0, rotation, 0);
         world.addBody(this.body);
 
+        //collider helper, uncomment for dev
         // const geometry = new THREE.BoxGeometry( x, y, z );
         // const wireframe = new THREE.WireframeGeometry(geometry);
         // this.helper = new THREE.LineSegments(wireframe);
@@ -46,13 +50,15 @@ export class Nuke {
     }
 
     update() {
-        if (this.canDisarm && !this.disarmed && this.body.position.y < -1) {
+        if (this.canDisarm && !this.disarmed && this.body.position.y < -1) { //check if pushed in water
             this.disarmed = true;
         }
 
+        //update model position from physics body
         this.model.position.copy(this.body.position);
         this.model.quaternion.copy(this.body.quaternion);
 
+        //if helper was created for dev purposes, update its position
         if (this.helper != null) {
             this.helper.position.copy(this.body.position);
             this.helper.quaternion.copy(this.body.quaternion);

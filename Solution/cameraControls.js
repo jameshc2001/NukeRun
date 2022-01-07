@@ -2,10 +2,7 @@
 //see the original version, included in the examples, to
 //see what changes were made.
 //It's mainly just getting the camera to work well in third person
-//and be able to switch to first person on demand.
-
-//WARNING: this modified version assumes that the camera is a child
-//of the object it is targeting!
+//and be able to switch to first person on demand, while maintaining direction
 
 import {
 	Euler,
@@ -44,10 +41,10 @@ class CameraControls extends EventDispatcher {
         this.range = 200;
 
         this.firstPerson = false; //start in third person mode
-        this.firstPersonOffset = firstPersonOffset
-        this.thirdPersonOffset = thirdPersonOffset;
+        this.firstPersonOffset = firstPersonOffset //offset from target
+        this.thirdPersonOffset = thirdPersonOffset; //offset from target
         this.target = target;
-        this.targetOffset = targetOffset;
+        this.targetOffset = targetOffset; //orbit around the target plus this target offset vector
         this.camera = camera;
 
 		// Set to constrain the pitch of the camera
@@ -55,7 +52,7 @@ class CameraControls extends EventDispatcher {
 		this.minPolarAngle = 0; // radians
 		this.maxPolarAngle = Math.PI; // radians
 
-        //set initial properties
+        //set initial properties for third person view
         const initialPosition = new Vector3();
         initialPosition.copy(this.thirdPersonOffset);
         initialPosition.add(this.target.position);
@@ -66,11 +63,11 @@ class CameraControls extends EventDispatcher {
 
 		const scope = this;
 
-        //this function is my own creation
+        //this function is my own creation, it handles changing the perspective
         this.changePerspective = function() {
             if (this.firstPerson) { //switch to third person
 
-                //complicate, but mainly because of the way the third person camera works
+                //complicated, but mainly because of the way the third person camera works
                 //the third person camera orbits the target + the target offset, this
                 //needs to be taken into account when resetting its position to keep it
                 //facing the same direction as it was in first person.
@@ -101,7 +98,7 @@ class CameraControls extends EventDispatcher {
                 thirdInitialLookAt.add(this.target.position).add(this.targetOffset);
                 camera.lookAt(thirdInitialLookAt);
             }
-            else { //switch to first person
+            else { //switch to first person, camera naturally maintains its direction
                 const firstInitialPos = new Vector3();
                 firstInitialPos.copy(this.firstPersonOffset);
                 firstInitialPos.add(this.target.position);
@@ -112,8 +109,8 @@ class CameraControls extends EventDispatcher {
             console.log('perspective change');
         }
 
-        //this function contains the main edit, I want the camera to rotate
-        //around the camera's target, not in place.
+        //this function contains another edit. I want the camera to rotate
+        //around the camera's target (when in third person), not in place.
 		function onMouseMove( event ) {
 
 			if ( scope.isLocked === false || !scope.enabled) return;
@@ -126,7 +123,7 @@ class CameraControls extends EventDispatcher {
             if (movementX > scope.range || movementX < -scope.range) return;
             if (movementY > scope.range || movementY < -scope.range) return;
 
-            if (scope.firstPerson) {
+            if (scope.firstPerson) { //nothing changed from original code
                 _euler.setFromQuaternion( camera.quaternion );
 
                 _euler.y -= movementX * 0.002;
@@ -136,12 +133,11 @@ class CameraControls extends EventDispatcher {
 
                 camera.quaternion.setFromEuler( _euler );
             }
-            else { //third person
+            else { //third person, this is my own code
                 const polar = new Spherical(); //working in polar coordinates
 
                 //apply rotation
-                //console.log(scope.target);
-                camera.position.sub(scope.target.position).sub(scope.targetOffset); //move to origin be about origin
+                camera.position.sub(scope.target.position).sub(scope.targetOffset); //move to be about origin
                 polar.setFromVector3(camera.position);
                 polar.phi -= movementY * 0.002;
                 polar.theta -= movementX * 0.002;

@@ -1,14 +1,16 @@
+//this handles the loading of the level and the operations of
+//the level such as winning and restarting
+
 import * as THREE from '../Extra Libraries/three.module.js';
 import {Player} from './player.js';
-import { Nuke } from './nuke.js';
-//import * as CANNON from '../Common/build/cannon.js';
+import {Nuke} from './nuke.js';
 import {Water} from '../Extra Libraries/Water2.js';
 
 export class Level {
 
     levelID;
-    timer;
-    playExplosion;
+    timer; //for the nuke
+    playExplosion; //flag for playing the explosion sound only once
 
     resources;
 
@@ -21,20 +23,15 @@ export class Level {
     nuke;
     water;
 
-    world;
-
-    box;
-    boxBody;
-    floor;
-    floorBody;
-
-    physicsMaterial;
+    world; //the physics world
+    physicsMaterial; //for describing how nuke should interact with ground
 
     constructor(renderer, resources) {
         this.renderer = renderer;
         this.resources = resources;
         this.loaded = false;
 
+        //setup retry button
         document.getElementById('retryButton').onclick = function() {
             console.log('player is retrying');
             document.getElementById('died').style.display = "none";
@@ -46,8 +43,10 @@ export class Level {
     load(levelID) {
         this.levelID = levelID;
 
+        //add in the default colliders and geometry, player, nuke, etc... that are same for each level
         this.standardSetup();
 
+        //create level specific geometry (logs and crates)
         if (this.levelID == 0) {
             this.addCrate(new THREE.Vector3(-0.34, -0.4, -13), 0.1)
             this.addCrate(new THREE.Vector3(-1, -0.4, -8), 1.2)
@@ -64,6 +63,7 @@ export class Level {
             this.addLog(new THREE.Vector3(2, -0.42, 2.1), -1.9);
             this.addLog(new THREE.Vector3(-2, -0.42, 0), -1.6);
 
+            //create a staircase of boxex for player to climb and jump off of
             const stackStart = new THREE.Vector3(-6, -1.85, 2.8);
             for (let x = 0; x < 3; x++) {
                 for (let y = 0; y < 4; y++) {
@@ -78,28 +78,18 @@ export class Level {
             }
 
             this.addLog(new THREE.Vector3(0, -0.42, 10.5), 0.05);
-
-            // this.addCrate(new THREE.Vector3(-6, -1.8, 2.8), 0)
-            // this.addCrate(new THREE.Vector3(-7.5, -1.8, 2.8), 0)
-            // this.addCrate(new THREE.Vector3(-9, -1.8, 2.8), 0)
-            // this.addCrate(new THREE.Vector3(-6, -1.8, 4.3), 0)
-            // this.addCrate(new THREE.Vector3(-7.5, -1.8, 4.3), 0)
-            // this.addCrate(new THREE.Vector3(-9, -1.8, 4.3), 0)
-            // this.addCrate(new THREE.Vector3(-6, -1.8, 4.3), 0)
-            // this.addCrate(new THREE.Vector3(-7.5, -1.8, 4.3), 0)
-            // this.addCrate(new THREE.Vector3(-9, -1.8, 4.3), 0)
         }
 
-        this.loaded = true; //need to fix this later
+        this.loaded = true; //signals to main to start rendering and updating level
     }
 
     standardSetup() {
-        this.playExplosion = true;
+        this.playExplosion = true; //so when the timer runs out, we play the sound then toggle this variable
         this.timer = 30;
         this.turnOnElement('timer');
         document.getElementById('timerText').innerHTML = String(this.timer);
 
-        //set up cannon for physics
+        //set up cannon for physics, uses recommended settings from examples
         this.world = new CANNON.World();
         this.world.gravity.set(0,-9.81,0);
         this.world.quatNormalizeSkip = 0;
@@ -111,6 +101,7 @@ export class Level {
         this.world.defaultContactMaterial.friction = 0;
         this.world.defaultContactMaterial.restitution = 0;
 
+        //set up nuke physics material
         this.physicsMaterial = new CANNON.Material("frictionMaterial");
         this.world.addMaterial(this.physicsMaterial);
         var contactMat = new CANNON.ContactMaterial(this.physicsMaterial,
@@ -139,7 +130,7 @@ export class Level {
         this.dirLight.shadow.bias = 0;
         //add light and helper
         this.scene.add( this.dirLight );
-        // const helper = new THREE.CameraHelper( this.dirLight.shadow.camera );
+        // const helper = new THREE.CameraHelper( this.dirLight.shadow.camera ); // for dev
         // this.scene.add( helper );
         //ambient light because everything was too dark
         const ambLight = new THREE.AmbientLight(0xffffff, 2 );
@@ -190,6 +181,8 @@ export class Level {
     }
 
     addCollider(sx, sy, sz, px, py, pz, rotation) {
+
+        //uncomment for dev, shows box as wireframe
         // const colliderGeometry = new THREE.BoxGeometry(sx, sy, sz);
         // const wire = new THREE.WireframeGeometry(colliderGeometry);
         // const colliderHelper = new THREE.LineSegments(wire);
@@ -214,6 +207,7 @@ export class Level {
         log.rotation.y = rotation;
         this.scene.add(log);
         
+        //uncomment for dev, shows physics box as wireframe
         // const logGeometry = new THREE.BoxGeometry(0.6, 0.5, 2.5);
         // const wire = new THREE.WireframeGeometry(logGeometry);
         // const logHelper = new THREE.LineSegments(wire);
@@ -225,6 +219,7 @@ export class Level {
         // logHelper.position.y += 0.3;
         // this.scene.add(logHelper);
 
+        //add collider for log to physics world
         const logShape = new CANNON.Box(new CANNON.Vec3(0.6/2, 0.5/2, 2.5/2));
         const logBody = new CANNON.Body({mass:0,collisionFilterGroup: 1,collisionFilterMask: 1 | 2 | 4});
         logBody.addShape(logShape);
@@ -239,6 +234,8 @@ export class Level {
         crate.position.copy(position);
         crate.rotation.y = rotation;
         this.scene.add(crate);
+
+        //now add collider box for crate to physics world
         const crateShape = new CANNON.Box(new CANNON.Vec3(1.5/2, 1.5/2, 1.5/2));
         const crateBody = new CANNON.Body({mass:0,collisionFilterGroup: 1,collisionFilterMask: 1 | 2 | 4});
         crateBody.addShape(crateShape);
@@ -247,13 +244,14 @@ export class Level {
         this.world.addBody(crateBody);
     }
 
-    addTree(type, position, rotation) { //add rotation?
+    addTree(type, position, rotation) {
         switch(type) {
             case 'single':
                 const single = this.resources.singleModel.clone();
                 single.position.copy(position);
                 single.rotation.y = rotation;
                 this.scene.add(single);
+                //now add collider
                 const singleShape = new CANNON.Box(new CANNON.Vec3(0.3/2, 3/2, 0.3/2));
                 const singleTreeBody = new CANNON.Body({mass:0,collisionFilterGroup: 1,collisionFilterMask: 1 | 2 | 4});
                 singleTreeBody.addShape(singleShape);
@@ -267,6 +265,7 @@ export class Level {
                 dual.position.copy(position);
                 dual.rotation.y = rotation;
                 this.scene.add(dual);
+                //now add collider
                 const dualShape = new CANNON.Box(new CANNON.Vec3(1.5/2, 3/2, 0.3/2));
                 const dualTreeBody = new CANNON.Body({mass:0,collisionFilterGroup: 1,collisionFilterMask: 1 | 2 | 4});
                 dualTreeBody.addShape(dualShape);
@@ -280,6 +279,7 @@ export class Level {
                 trio.position.copy(position);
                 trio.rotation.y = rotation;
                 this.scene.add(trio);
+                //now add collider
                 const trioShape = new CANNON.Box(new CANNON.Vec3(1.4/2, 3/2, 1.4/2));
                 const trioTreeBody = new CANNON.Body({mass:0,collisionFilterGroup: 1,collisionFilterMask: 1 | 2 | 4});
                 trioTreeBody.addShape(trioShape);
@@ -298,23 +298,23 @@ export class Level {
 
     retry() {
         this.player.waterAmbientSound.stop();
-        this.load(this.levelID); //incredibly lazy
+        this.load(this.levelID); //reload the level, everything is in memory so this is very fast
     }
 
     update(deltaTime) {
         this.world.step(1/60, deltaTime); //physics update synced to framerate
 
         if (this.nuke.disarmed) {
-            if (this.nuke.playSplash) {
+            if (this.nuke.playSplash) { //only play splash sound effect once
                 this.nuke.playSplash = false;
                 this.player.waterSplashSound.play();
             }
             this.turnOnElement('win');
             this.turnOffElement('timer');
-            this.player.kill(true);
+            this.player.kill(true); //kill the player (only player's controls so pass true)
         }
 
-        if (this.player.hasMoved && !this.nuke.disarmed) {
+        if (this.player.hasMoved && !this.nuke.disarmed) { //tick the timer
             this.timer -= deltaTime;
             document.getElementById('timerText').innerHTML = String(Math.ceil(this.timer));
         }
@@ -338,6 +338,7 @@ export class Level {
         this.nuke.update();
     }
 
+    //utility method for toggling on html element
     turnOnElement(element) {
         const style = getComputedStyle(document.getElementById(element));
         if (style.display == 'none') {
@@ -345,6 +346,7 @@ export class Level {
         }
     }
 
+    //utility method for toggling off html element
     turnOffElement(element) {
         const style = getComputedStyle(document.getElementById(element));
         if (style.display == 'block') {
