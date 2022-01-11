@@ -331,6 +331,7 @@ export class Level {
 
         this.player.update(deltaTime);
         if (this.player.dead && !this.nuke.disarmed) {
+            this.nuke.canDisarm = false;
             this.turnOnElement('died');
             this.turnOffElement('timer');
         }
