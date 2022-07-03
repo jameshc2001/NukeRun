@@ -1,14 +1,18 @@
 NUKE RUN
 
-<img src="nukerunscreenshot1.png" width="200" height=auto />
+<img src="nukerunscreenshot1.png" width="600" height=auto />
 
-<img src="nukerunscreenshot2.png" width="200" height=auto />
+<img src="nukerunscreenshot2.png" width="600" height=auto />
+
+[screen-capture.webm](https://user-images.githubusercontent.com/22895877/177047619-a59dcc0e-c360-41e0-9ae1-096401b1d9c9.webm)
+
 
 Setup:
 Run server.py using command: python ./server.py
 You may need to use: python3 ./server.py
 To play the game navigate to http://localhost:8000/Solution/ in your favourite web browser
 (The game was tested on google chrome)
+
 
 Some UI elements may appear too big (e.g. the back button on the How To Play screen)
 Hold down ctrl and scroll back to change the UI and menu to the desired size.
