@@ -1,8 +1,8 @@
 NUKE RUN
 
-<img src="nukerunescreenshot1.png" width="200" height=auto />
+<img src="nukerunscreenshot1.png" width="200" height=auto />
 
-<img src="nukerunescreenshot2.png" width="200" height=auto />
+<img src="nukerunscreenshot2.png" width="200" height=auto />
 
 Setup:
 Run server.py using command: python ./server.py
